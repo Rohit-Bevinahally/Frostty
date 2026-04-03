@@ -1,0 +1,79 @@
+name: Frostty
+options:
+  bundleIdPrefix: com.frostty
+  deploymentTarget:
+    macOS: "15.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    OTHER_LDFLAGS:
+      - -framework Metal
+      - -framework MetalKit
+      - -framework QuartzCore
+      - -framework CoreGraphics
+      - -framework Foundation
+      - -framework IOKit
+      - -framework CoreText
+      - -lz
+      - -lc++
+      - -framework Carbon
+    SWIFT_ACTIVE_COMPILATION_CONDITIONS:
+      - DEBUG
+
+targets:
+  Frostty:
+    type: application
+    platform: macOS
+    sources:
+      - path: Frostty
+        excludes:
+          - "**/*.entitlements"
+    postBuildScripts:
+      - script: |
+          mkdir -p "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
+          if [ -d "${PROJECT_DIR}/Resources/ghostty" ]; then
+            cp -R "${PROJECT_DIR}/Resources/ghostty" "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/ghostty"
+          fi
+          if [ -d "${PROJECT_DIR}/Resources/terminfo" ]; then
+            cp -R "${PROJECT_DIR}/Resources/terminfo" "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/terminfo"
+          fi
+        name: Copy Ghostty Resources
+    info:
+      path: Frostty/Info.plist
+      properties:
+        CFBundleIconFile: AppIcon
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSPrincipalClass: NSApplication
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.frostty.terminal
+        PRODUCT_NAME: Frostty
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: 1
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        CODE_SIGN_ENTITLEMENTS: Frostty/Frostty.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_OBJC_BRIDGING_HEADER: Frostty-Bridging-Header.h
+    dependencies:
+      - framework: GhosttyKit.xcframework
+        embed: false
+
+schemes:
+  Frostty:
+    build:
+      targets:
+        Frostty: all
+    run:
+      config: Debug
+
+fileGroups:
+  - Frostty-Bridging-Header.h

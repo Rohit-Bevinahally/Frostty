@@ -1,0 +1,572 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		010B2ED011450841882CB09A /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC1C750C9ED868902A93F0F /* TabBarView.swift */; };
+		013BB0D2B1067BD9F9698762 /* SurfaceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9A858D42E983B719C4EE78 /* SurfaceRegistry.swift */; };
+		0D5663F98C28148D1CFA0B7B /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C08E43E6A2CA2FD0353F60 /* Tab.swift */; };
+		0EAC8AB8311301628270E7B2 /* SplitTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 163BE035DD8356325BD53514 /* SplitTree.swift */; };
+		11F042ADFF5046B9C0CC135B /* NewWorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BB83189481E8C037237509 /* NewWorkspaceSheet.swift */; };
+		19278A0B73D765A44A0ECD24 /* WindowSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 298E3E59D0D5067831EAA19A /* WindowSession.swift */; };
+		199593384FC4E46191AEB84A /* GhosttyFFI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0919F243D39A9055543897 /* GhosttyFFI.swift */; };
+		287B9907A1E97DA5462B987E /* SplitDividerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */; };
+		28AF7AB2B48992623A91A664 /* SurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */; };
+		2C4D14F22B2D6757E0D75635 /* WorkingDirectoryField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE36B15AE74260F554CF552 /* WorkingDirectoryField.swift */; };
+		2F1D2B4CD2212785F9959B05 /* ShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */; };
+		4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */; };
+		498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51514732293A8D67475BF38D /* EventTranslator.swift */; };
+		58ACD4B61AF6785D99CBCCA4 /* MainContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D0BA29DAA133631BF1D865E /* MainContentView.swift */; };
+		58CC87D743CDCB718C20BF28 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFADF2843DFBBF2B13FFC0B /* Workspace.swift */; };
+		5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */; };
+		63D3F45F212D9F5A12ABBACD /* GhosttyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249A632020C8B497F269BFA7 /* GhosttyApp.swift */; };
+		7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57652394DF6F43C2D5546861 /* SidebarView.swift */; };
+		70259D032EF64307839A717F /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C17E75CD042ACD39FFE8EE /* MetalView.swift */; };
+		7D3E40B275F372A5A6AC79F8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */; };
+		92614F6F15FA239915D5CB7D /* SurfaceScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */; };
+		943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */; };
+		A365C789DD0DB91E3EDC585B /* SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */; };
+		B85D100DD9E1EAEB16C6C577 /* GhosttyConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */; };
+		E56256BA673A2677328B6A9E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C901E4BB3502A7E1787E7B48 /* main.swift */; };
+		E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */; };
+		E90C34FD17CCA6A5F14F2A87 /* GhosttyAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */; };
+		E924CD8B00C535769AAC7B28 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0DAA01E8CBB55FF2E4FF73 /* AppSession.swift */; };
+		ED0A0F75B0BE8A9632FE0105 /* SplitContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */; };
+		F97C15B1378F19A82641B35C /* GhosttyKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9645B2623F21205017E12947 /* GhosttyKit.xcframework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		024F353AA290B8E724CD46A3 /* Frostty-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Frostty-Bridging-Header.h"; sourceTree = "<group>"; };
+		026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyConfig.swift; sourceTree = "<group>"; };
+		163BE035DD8356325BD53514 /* SplitTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTree.swift; sourceTree = "<group>"; };
+		1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyAction.swift; sourceTree = "<group>"; };
+		1AFADF2843DFBBF2B13FFC0B /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
+		1FE36B15AE74260F554CF552 /* WorkingDirectoryField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingDirectoryField.swift; sourceTree = "<group>"; };
+		232E5CF0BAEABCB0857D65CC /* Frostty.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Frostty.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		249A632020C8B497F269BFA7 /* GhosttyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyApp.swift; sourceTree = "<group>"; };
+		298E3E59D0D5067831EAA19A /* WindowSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSession.swift; sourceTree = "<group>"; };
+		51514732293A8D67475BF38D /* EventTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTranslator.swift; sourceTree = "<group>"; };
+		5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitDividerView.swift; sourceTree = "<group>"; };
+		55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindowController.swift; sourceTree = "<group>"; };
+		57652394DF6F43C2D5546861 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceView.swift; sourceTree = "<group>"; };
+		7F0919F243D39A9055543897 /* GhosttyFFI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyFFI.swift; sourceTree = "<group>"; };
+		9645B2623F21205017E12947 /* GhosttyKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = GhosttyKit.xcframework; sourceTree = "<group>"; };
+		9D0BA29DAA133631BF1D865E /* MainContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainContentView.swift; sourceTree = "<group>"; };
+		A1C08E43E6A2CA2FD0353F60 /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
+		A8BB83189481E8C037237509 /* NewWorkspaceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewWorkspaceSheet.swift; sourceTree = "<group>"; };
+		B5AAF6C1F4FEB997912D3392 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindow.swift; sourceTree = "<group>"; };
+		B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutManager.swift; sourceTree = "<group>"; };
+		C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitContainerView.swift; sourceTree = "<group>"; };
+		C7C17E75CD042ACD39FFE8EE /* MetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalView.swift; sourceTree = "<group>"; };
+		C901E4BB3502A7E1787E7B48 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttySurface.swift; sourceTree = "<group>"; };
+		D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceScrollView.swift; sourceTree = "<group>"; };
+		EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBarView.swift; sourceTree = "<group>"; };
+		EEC1C750C9ED868902A93F0F /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokyoNight.swift; sourceTree = "<group>"; };
+		FB9A858D42E983B719C4EE78 /* SurfaceRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceRegistry.swift; sourceTree = "<group>"; };
+		FE0DAA01E8CBB55FF2E4FF73 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		20B293DA5936EF89D31DF596 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F97C15B1378F19A82641B35C /* GhosttyKit.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		06937AF4C3EFBFC7DC3524A8 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */,
+				C901E4BB3502A7E1787E7B48 /* main.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		0E282736EF8E7032BB444116 /* Surface */ = {
+			isa = PBXGroup;
+			children = (
+				EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */,
+				C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */,
+				5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */,
+				D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */,
+				7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */,
+			);
+			path = Surface;
+			sourceTree = "<group>";
+		};
+		10D0B08F1C66ED59E2A80CFA /* MainWindow */ = {
+			isa = PBXGroup;
+			children = (
+				B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */,
+				55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */,
+				9D0BA29DAA133631BF1D865E /* MainContentView.swift */,
+			);
+			path = MainWindow;
+			sourceTree = "<group>";
+		};
+		63561B2ABA96366315280DD9 = {
+			isa = PBXGroup;
+			children = (
+				024F353AA290B8E724CD46A3 /* Frostty-Bridging-Header.h */,
+				B4B3CD23A429EF54BE63B017 /* Frostty */,
+				DD80E1FC41EB5ACE3418175B /* Frameworks */,
+				C24F64A5387C9B0A325A7852 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		657573DD65F911EA89E43294 /* Styling */ = {
+			isa = PBXGroup;
+			children = (
+				F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */,
+			);
+			path = Styling;
+			sourceTree = "<group>";
+		};
+		69F74C2551549F34B2118930 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				10D0B08F1C66ED59E2A80CFA /* MainWindow */,
+				ED3040B3A399DBD91162555F /* Sidebar */,
+				0E282736EF8E7032BB444116 /* Surface */,
+				F4E7298C7B4FBF222B2ABA33 /* TabBar */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		8B3214CFBFED9487E28355EE /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				FE0DAA01E8CBB55FF2E4FF73 /* AppSession.swift */,
+				163BE035DD8356325BD53514 /* SplitTree.swift */,
+				FB9A858D42E983B719C4EE78 /* SurfaceRegistry.swift */,
+				A1C08E43E6A2CA2FD0353F60 /* Tab.swift */,
+				298E3E59D0D5067831EAA19A /* WindowSession.swift */,
+				1AFADF2843DFBBF2B13FFC0B /* Workspace.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		950323C542788B3E75FE57D7 /* Input */ = {
+			isa = PBXGroup;
+			children = (
+				B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */,
+			);
+			path = Input;
+			sourceTree = "<group>";
+		};
+		B4B3CD23A429EF54BE63B017 /* Frostty */ = {
+			isa = PBXGroup;
+			children = (
+				B5AAF6C1F4FEB997912D3392 /* Info.plist */,
+				06937AF4C3EFBFC7DC3524A8 /* App */,
+				F2447ECC83FF6BE957715840 /* GhosttyBridge */,
+				950323C542788B3E75FE57D7 /* Input */,
+				8B3214CFBFED9487E28355EE /* Models */,
+				657573DD65F911EA89E43294 /* Styling */,
+				69F74C2551549F34B2118930 /* Views */,
+			);
+			path = Frostty;
+			sourceTree = "<group>";
+		};
+		C24F64A5387C9B0A325A7852 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				232E5CF0BAEABCB0857D65CC /* Frostty.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DD80E1FC41EB5ACE3418175B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9645B2623F21205017E12947 /* GhosttyKit.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		ED3040B3A399DBD91162555F /* Sidebar */ = {
+			isa = PBXGroup;
+			children = (
+				A8BB83189481E8C037237509 /* NewWorkspaceSheet.swift */,
+				57652394DF6F43C2D5546861 /* SidebarView.swift */,
+				1FE36B15AE74260F554CF552 /* WorkingDirectoryField.swift */,
+			);
+			path = Sidebar;
+			sourceTree = "<group>";
+		};
+		F2447ECC83FF6BE957715840 /* GhosttyBridge */ = {
+			isa = PBXGroup;
+			children = (
+				51514732293A8D67475BF38D /* EventTranslator.swift */,
+				1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */,
+				249A632020C8B497F269BFA7 /* GhosttyApp.swift */,
+				026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */,
+				7F0919F243D39A9055543897 /* GhosttyFFI.swift */,
+				CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */,
+				C7C17E75CD042ACD39FFE8EE /* MetalView.swift */,
+			);
+			path = GhosttyBridge;
+			sourceTree = "<group>";
+		};
+		F4E7298C7B4FBF222B2ABA33 /* TabBar */ = {
+			isa = PBXGroup;
+			children = (
+				EEC1C750C9ED868902A93F0F /* TabBarView.swift */,
+			);
+			path = TabBar;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FD0683A5ABE98E7C6EB8DE63 /* Frostty */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1848913AD474E851485644A /* Build configuration list for PBXNativeTarget "Frostty" */;
+			buildPhases = (
+				AADDBDBA8F3E508DD06D99FE /* Sources */,
+				20B293DA5936EF89D31DF596 /* Frameworks */,
+				77BE21FAE1AEDCBEA10D2D1F /* Copy Ghostty Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Frostty;
+			productName = Frostty;
+			productReference = 232E5CF0BAEABCB0857D65CC /* Frostty.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		67E69C2EAC8CC3C9773443FC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					FD0683A5ABE98E7C6EB8DE63 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 914C47E09B54507551730FD2 /* Build configuration list for PBXProject "Frostty" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 63561B2ABA96366315280DD9;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FD0683A5ABE98E7C6EB8DE63 /* Frostty */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		77BE21FAE1AEDCBEA10D2D1F /* Copy Ghostty Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Ghostty Resources";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\nif [ -d \"${PROJECT_DIR}/Resources/ghostty\" ]; then\n  cp -R \"${PROJECT_DIR}/Resources/ghostty\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/ghostty\"\nfi\nif [ -d \"${PROJECT_DIR}/Resources/terminfo\" ]; then\n  cp -R \"${PROJECT_DIR}/Resources/terminfo\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/terminfo\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AADDBDBA8F3E508DD06D99FE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D3E40B275F372A5A6AC79F8 /* AppDelegate.swift in Sources */,
+				E924CD8B00C535769AAC7B28 /* AppSession.swift in Sources */,
+				498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */,
+				E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */,
+				943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */,
+				E90C34FD17CCA6A5F14F2A87 /* GhosttyAction.swift in Sources */,
+				63D3F45F212D9F5A12ABBACD /* GhosttyApp.swift in Sources */,
+				B85D100DD9E1EAEB16C6C577 /* GhosttyConfig.swift in Sources */,
+				199593384FC4E46191AEB84A /* GhosttyFFI.swift in Sources */,
+				4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */,
+				58ACD4B61AF6785D99CBCCA4 /* MainContentView.swift in Sources */,
+				70259D032EF64307839A717F /* MetalView.swift in Sources */,
+				11F042ADFF5046B9C0CC135B /* NewWorkspaceSheet.swift in Sources */,
+				A365C789DD0DB91E3EDC585B /* SearchBarView.swift in Sources */,
+				2F1D2B4CD2212785F9959B05 /* ShortcutManager.swift in Sources */,
+				7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */,
+				ED0A0F75B0BE8A9632FE0105 /* SplitContainerView.swift in Sources */,
+				287B9907A1E97DA5462B987E /* SplitDividerView.swift in Sources */,
+				0EAC8AB8311301628270E7B2 /* SplitTree.swift in Sources */,
+				013BB0D2B1067BD9F9698762 /* SurfaceRegistry.swift in Sources */,
+				92614F6F15FA239915D5CB7D /* SurfaceScrollView.swift in Sources */,
+				28AF7AB2B48992623A91A664 /* SurfaceView.swift in Sources */,
+				0D5663F98C28148D1CFA0B7B /* Tab.swift in Sources */,
+				010B2ED011450841882CB09A /* TabBarView.swift in Sources */,
+				5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */,
+				19278A0B73D765A44A0ECD24 /* WindowSession.swift in Sources */,
+				2C4D14F22B2D6757E0D75635 /* WorkingDirectoryField.swift in Sources */,
+				58CC87D743CDCB718C20BF28 /* Workspace.swift in Sources */,
+				E56256BA673A2677328B6A9E /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		10F95B6660DCAA5D0B40B098 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = Frostty/Frostty.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = Frostty/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.frostty.terminal;
+				PRODUCT_NAME = Frostty;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Frostty-Bridging-Header.h";
+			};
+			name = Debug;
+		};
+		45F7B005F92C54A55501BE8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = Frostty/Frostty.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = Frostty/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.frostty.terminal;
+				PRODUCT_NAME = Frostty;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Frostty-Bridging-Header.h";
+			};
+			name = Release;
+		};
+		87ECA87ADB5EBC253CA8C248 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = (
+					"-framework Metal",
+					"-framework MetalKit",
+					"-framework QuartzCore",
+					"-framework CoreGraphics",
+					"-framework Foundation",
+					"-framework IOKit",
+					"-framework CoreText",
+					"-lz",
+					"-lc++",
+					"-framework Carbon",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					DEBUG,
+				);
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C2727B8968D8C4C4C1A8DF2E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"-framework Metal",
+					"-framework MetalKit",
+					"-framework QuartzCore",
+					"-framework CoreGraphics",
+					"-framework Foundation",
+					"-framework IOKit",
+					"-framework CoreText",
+					"-lz",
+					"-lc++",
+					"-framework Carbon",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					DEBUG,
+				);
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		914C47E09B54507551730FD2 /* Build configuration list for PBXProject "Frostty" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C2727B8968D8C4C4C1A8DF2E /* Debug */,
+				87ECA87ADB5EBC253CA8C248 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A1848913AD474E851485644A /* Build configuration list for PBXNativeTarget "Frostty" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				10F95B6660DCAA5D0B40B098 /* Debug */,
+				45F7B005F92C54A55501BE8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 67E69C2EAC8CC3C9773443FC /* Project object */;
+}
