@@ -136,6 +136,8 @@ enum GhosttyActionRouter {
         guard let titlePtr = value.title else { return false }
         let title = String(cString: titlePtr)
 
+        surfaceView.applyGhosttyTitle(title)
+
         NotificationCenter.default.post(
             name: .ghosttySetTitle,
             object: surfaceView,
@@ -152,6 +154,8 @@ enum GhosttyActionRouter {
         guard let surfaceView = surfaceView(from: target) else { return false }
         guard let pwdPtr = value.pwd else { return false }
         let pwd = String(cString: pwdPtr)
+
+        surfaceView.applyGhosttyPwd(pwd)
 
         NotificationCenter.default.post(
             name: .ghosttySetPwd,

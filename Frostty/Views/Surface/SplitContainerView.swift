@@ -11,7 +11,7 @@ class SplitContainerView: NSView {
     private var registry: SurfaceRegistry
     private var currentTree: SplitTree = SplitTree()
     private var maximizedLeafID: UUID?
-    private var scrollWrappers: [UUID: SurfaceScrollView] = [:]
+    private var leafContainers: [UUID: NSView] = [:]
     var onRatioChange: (([SplitPathBranch], Double, CGSize) -> Void)?
     var onPaneDrop: ((UUID, UUID, PaneDropZone) -> Void)?
     var onPaneDetachToNewTab: ((UUID, NSPoint) -> Void)?
@@ -43,7 +43,7 @@ class SplitContainerView: NSView {
         self.registry = registry
         currentTree = SplitTree()
         maximizedLeafID = nil
-        scrollWrappers.removeAll()
+        leafContainers.removeAll()
         subviews.forEach { $0.removeFromSuperview() }
         needsLayout = true
     }
@@ -96,13 +96,13 @@ class SplitContainerView: NSView {
         if let maximizedLeafID,
            currentTree.allLeafIDs().contains(maximizedLeafID) {
             layoutLeaf(maximizedLeafID, in: bounds)
-            removeHiddenWrappers(except: [maximizedLeafID])
+            removeHiddenLeafContainers(except: [maximizedLeafID])
         } else {
             layoutNode(root, in: bounds)
-            removeHiddenWrappers(except: currentTree.allLeafIDs())
+            removeHiddenLeafContainers(except: currentTree.allLeafIDs())
         }
 
-        removeOrphanedSurfaces()
+        removeOrphanedLeafContainers()
     }
 
     // MARK: - Recursive Layout
@@ -178,27 +178,41 @@ class SplitContainerView: NSView {
     }
 
     private func layoutLeaf(_ id: UUID, in rect: CGRect) {
-        guard let surfaceView = registry.view(for: id) else { return }
+        if let surfaceView = registry.view(for: id) {
+            let wrapper: SurfaceScrollView
+            if let existing = leafContainers[id] as? SurfaceScrollView {
+                wrapper = existing
+            } else {
+                wrapper = SurfaceScrollView(surfaceView: surfaceView)
+                leafContainers[id] = wrapper
+            }
 
-        let wrapper: SurfaceScrollView
-        if let existing = scrollWrappers[id] {
-            wrapper = existing
-        } else {
-            wrapper = SurfaceScrollView(surfaceView: surfaceView)
-            scrollWrappers[id] = wrapper
+            wrapper.frame = rect
+            wrapper.paneID = id
+            wrapper.dragWidgetsEnabled = maximizedLeafID == nil
+            wrapper.onPaneDrop = onPaneDrop
+            wrapper.onPaneDetachToNewTab = onPaneDetachToNewTab
+            configurePaneAppearance(wrapper, paneID: id, frame: rect)
+            wrapper.autoresizingMask = []
+            if wrapper.superview !== self {
+                addSubview(wrapper)
+            }
+            return
         }
 
-        wrapper.frame = rect
-        wrapper.paneID = id
-        wrapper.dragWidgetsEnabled = maximizedLeafID == nil
-        wrapper.onPaneDrop = onPaneDrop
-        wrapper.onPaneDetachToNewTab = onPaneDetachToNewTab
-        configureWrapperAppearance(wrapper, paneID: id, frame: rect)
-        wrapper.autoresizingMask = []
-        if wrapper.superview !== self {
-            addSubview(wrapper)
+        guard let paneView = registry.paneView(for: id) else { return }
+        if let browserPane = paneView as? BrowserPaneView {
+            browserPane.dragWidgetsEnabled = maximizedLeafID == nil
+            browserPane.onPaneDrop = onPaneDrop
+            browserPane.onPaneDetachToNewTab = onPaneDetachToNewTab
         }
-
+        leafContainers[id] = paneView
+        paneView.frame = rect
+        paneView.autoresizingMask = []
+        configurePaneAppearance(paneView, paneID: id, frame: rect)
+        if paneView.superview !== self {
+            addSubview(paneView)
+        }
     }
 
     private func addDivider(
@@ -242,9 +256,9 @@ class SplitContainerView: NSView {
         addSubview(divider)
     }
 
-    private func configureWrapperAppearance(_ wrapper: SurfaceScrollView, paneID: UUID, frame: CGRect) {
-        wrapper.wantsLayer = true
-        guard let layer = wrapper.layer else { return }
+    private func configurePaneAppearance(_ paneView: NSView, paneID: UUID, frame: CGRect) {
+        paneView.wantsLayer = true
+        guard let layer = paneView.layer else { return }
 
         guard currentTree.isSplit else {
             layer.borderWidth = 0
@@ -293,36 +307,18 @@ class SplitContainerView: NSView {
         }
     }
 
-    private func removeHiddenWrappers(except visibleLeafIDs: [UUID]) {
+    private func removeHiddenLeafContainers(except visibleLeafIDs: [UUID]) {
         let visibleIDs = Set(visibleLeafIDs)
-        for (id, wrapper) in scrollWrappers where !visibleIDs.contains(id) {
-            wrapper.removeFromSuperview()
+        for (id, paneView) in leafContainers where !visibleIDs.contains(id) {
+            paneView.removeFromSuperview()
         }
     }
 
-    /// Remove orphaned subviews not present in the current tree.
-    /// Handles both SurfaceScrollView wrappers and legacy bare SurfaceView subviews.
-    private func removeOrphanedSurfaces() {
+    private func removeOrphanedLeafContainers() {
         let treeIDs = Set(currentTree.allLeafIDs())
-        for subview in subviews {
-            if let wrapper = subview as? SurfaceScrollView {
-                let id = registry.id(for: wrapper.surfaceView)
-                if id == nil || !treeIDs.contains(id!) {
-                    subview.removeFromSuperview()
-                    if let id { scrollWrappers.removeValue(forKey: id) }
-                }
-            } else if let surface = subview as? SurfaceView {
-                // Legacy: shouldn't happen, but clean up
-                let id = registry.id(for: surface)
-                if id == nil || !treeIDs.contains(id!) {
-                    subview.removeFromSuperview()
-                }
-            }
-        }
-        // Also clean wrapper dictionary of IDs no longer in tree
-        for id in scrollWrappers.keys where !treeIDs.contains(id) {
-            scrollWrappers[id]?.removeFromSuperview()
-            scrollWrappers.removeValue(forKey: id)
+        for (id, paneView) in Array(leafContainers) where !treeIDs.contains(id) || !registry.contains(id) {
+            paneView.removeFromSuperview()
+            leafContainers.removeValue(forKey: id)
         }
     }
 }

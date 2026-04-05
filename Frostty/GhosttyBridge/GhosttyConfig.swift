@@ -143,7 +143,9 @@ final class GhosttyConfigManager {
     }
 
     var backgroundOpacity: Double {
-        getDouble("background-opacity", default: 1.0)
+        let v = getDouble("background-opacity", default: 1.0)
+        if v.isFinite, v > 0, v <= 1 { return v }
+        return 1.0
     }
 
     var backgroundColor: NSColor {

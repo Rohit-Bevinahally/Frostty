@@ -189,7 +189,15 @@ struct SplitTree: Codable, Equatable, Sendable {
         let focusTarget = Self.findSiblingLeaf(in: root, of: leafID)
 
         let newRoot = Self.removeNode(from: root, leafID: leafID)
-        let newFocused = focusTarget ?? focusedLeafID
+
+        let newFocused: UUID?
+        if focusedLeafID == leafID {
+            // Focused pane was removed — move focus to a sibling leaf (or first remaining leaf).
+            newFocused = focusTarget ?? newRoot.flatMap { Self.firstLeafID(of: $0) }
+        } else {
+            newFocused = focusedLeafID
+        }
+
         return (SplitTree(root: newRoot, focusedLeafID: newRoot == nil ? nil : newFocused), focusTarget)
     }
 

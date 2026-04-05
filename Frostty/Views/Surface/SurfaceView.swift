@@ -12,6 +12,20 @@ import os
 
 private let logger = Logger(subsystem: "com.frostty.terminal", category: "SurfaceView")
 
+extension NSView {
+    /// Bitmap snapshot of this view’s current pixels (used for pane drag previews).
+    var frosttyPaneSnapshotImage: NSImage? {
+        guard let bitmapRep = bitmapImageRepForCachingDisplay(in: bounds) else {
+            return nil
+        }
+
+        cacheDisplay(in: bounds, to: bitmapRep)
+        let image = NSImage(size: bounds.size)
+        image.addRepresentation(bitmapRep)
+        return image
+    }
+}
+
 
 // MARK: - SurfaceView
 
@@ -26,6 +40,16 @@ class SurfaceView: NSView, ObservableObject {
 
     /// The current working directory.
     private(set) var pwd: String?
+
+    /// Called from `GhosttyActionRouter` when libghostty delivers `GHOSTTY_ACTION_SET_TITLE` for this surface.
+    func applyGhosttyTitle(_ string: String) {
+        title = string
+    }
+
+    /// Called from `GhosttyActionRouter` when libghostty delivers `GHOSTTY_ACTION_PWD` for this surface.
+    func applyGhosttyPwd(_ string: String) {
+        pwd = string
+    }
 
     /// Whether the view is focused.
     private(set) var focused: Bool = false
@@ -683,14 +707,7 @@ class SurfaceView: NSView, ObservableObject {
 extension SurfaceView {
     /// A snapshot image of the current surface view.
     var asImage: NSImage? {
-        guard let bitmapRep = bitmapImageRepForCachingDisplay(in: bounds) else {
-            return nil
-        }
-
-        cacheDisplay(in: bounds, to: bitmapRep)
-        let image = NSImage(size: bounds.size)
-        image.addRepresentation(bitmapRep)
-        return image
+        frosttyPaneSnapshotImage
     }
 }
 

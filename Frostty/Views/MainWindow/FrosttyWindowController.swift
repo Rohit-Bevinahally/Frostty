@@ -31,10 +31,32 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         activeTab?.registry
     }
 
+    var activeBrowserControllerForExternal: BrowserTabController? {
+        guard let tab = activeTab else { return nil }
+
+        if let focusedID = tab.splitTree.focusedLeafID,
+           let controller = tab.registry.browserController(for: focusedID) {
+            return controller
+        }
+
+        for paneID in tab.splitTree.allLeafIDs() {
+            if let controller = tab.registry.browserController(for: paneID) {
+                return controller
+            }
+        }
+
+        return nil
+    }
+
     private var focusedController: GhosttySurfaceController? {
         guard let tab = activeTab,
               let focusedID = tab.splitTree.focusedLeafID else { return nil }
         return tab.registry.controller(for: focusedID)
+    }
+
+    private enum BrowserOpenDestination {
+        case newTab
+        case split(SplitDirection)
     }
 
     private struct DetachedPaneMove {
@@ -119,6 +141,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         manager.register(modifiers: [.control, .shift], keyCode: 17) { [weak self] in
             self?.createNewTabAtEnd()
         }
+        // Cmd+Shift+T -> open browser in a new tab
+        manager.register(modifiers: [.command, .shift], keyCode: 17) { [weak self] in
+            self?.openBrowser(destination: .newTab)
+        }
         // Cmd+D -> split right (keyCode 2 = D)
         manager.register(modifiers: [.command], keyCode: 2) { [weak self] in
             self?.splitPane(direction: .horizontal)
@@ -126,6 +152,31 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         // Cmd+Shift+D -> split down (keyCode 2 = D)
         manager.register(modifiers: [.command, .shift], keyCode: 2) { [weak self] in
             self?.splitPane(direction: .vertical)
+        }
+        // Cmd+B -> open browser in a horizontal split (keyCode 11 = B)
+        manager.register(modifiers: [.command], keyCode: 11) { [weak self] in
+            self?.openBrowser(destination: .split(.horizontal))
+        }
+        // Cmd+Shift+B -> open browser in a vertical split
+        manager.register(modifiers: [.command, .shift], keyCode: 11) { [weak self] in
+            self?.openBrowser(destination: .split(.vertical))
+        }
+        // Cmd+L -> focus browser address bar (keyCode 37 = L)
+        manager.register(modifiers: [.command], keyCode: 37) { [weak self] in
+            self?.focusBrowserAddressBar()
+        }
+        // Ctrl+D -> close active browser pane, or pass through to terminal when focus is not a browser
+        manager.register(
+            modifiers: [.control],
+            keyCode: 2,
+            isEnabled: { [weak self] in
+                guard let self,
+                      let tab = self.activeTab,
+                      let fid = tab.splitTree.focusedLeafID else { return false }
+                return tab.registry.browserController(for: fid) != nil
+            }
+        ) { [weak self] in
+            self?.closeActiveBrowserPaneIfPossible()
         }
         // Cmd+R -> enter pane resize mode (keyCode 15 = R)
         manager.register(modifiers: [.command], keyCode: 15) { [weak self] in
@@ -264,8 +315,9 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         rebuildSplitContainer()
         updateLayout()
 
-        if let surfaceView = tab.registry.view(for: surfaceID) {
-            window.makeFirstResponder(surfaceView)
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.window, let tab = self.activeTab else { return }
+            _ = tab.registry.makeFirstResponder(for: surfaceID, in: window)
         }
     }
 
@@ -359,17 +411,16 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     @discardableResult
     private func focusActiveTabImmediately() -> Bool {
         guard let tab = activeTab,
-              let focusedID = tab.splitTree.focusedLeafID,
-              let focusView = tab.registry.view(for: focusedID) else {
+              let focusedID = tab.splitTree.focusedLeafID else {
             return false
         }
 
-        synchronizeSurfaceFocus(in: tab, focusedID: focusedID)
-        let becameFirstResponder = window?.makeFirstResponder(focusView) ?? false
+        let becameFirstResponder = tab.registry.makeFirstResponder(for: focusedID, in: window)
         guard becameFirstResponder else { return false }
 
-        markFocusedSurface(in: tab, focusedID: focusedID)
-        focusView.needsDisplay = true
+        synchronizePaneFocus(in: tab, focusedID: focusedID)
+        markFocusedPane(in: tab, focusedID: focusedID)
+        tab.registry.paneView(for: focusedID)?.needsDisplay = true
         return true
     }
 
@@ -393,7 +444,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
         guard let tab = activeTab,
               let focusedID = tab.splitTree.focusedLeafID,
-              let focusView = tab.registry.view(for: focusedID) else { return }
+              let focusView = tab.registry.paneView(for: focusedID) else { return }
 
         let inWindow = focusView.window === self.window
         let hasSuperview = focusView.superview != nil
@@ -406,10 +457,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             return
         }
 
-        let result = window?.makeFirstResponder(focusView) ?? false
+        let result = tab.registry.makeFirstResponder(for: focusedID, in: window)
         if result {
-            synchronizeSurfaceFocus(in: tab, focusedID: focusedID)
-            markFocusedSurface(in: tab, focusedID: focusedID)
+            synchronizePaneFocus(in: tab, focusedID: focusedID)
+            markFocusedPane(in: tab, focusedID: focusedID)
             focusView.needsDisplay = true
         }
     }
@@ -422,6 +473,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         tab.registry.resumeAll()
         rebuildSplitContainer()
         updateLayout()
+        syncWindowTitleWithFocusedPane(in: tab)
         focusActiveTabImmediately()
         restoreFocus()
     }
@@ -430,6 +482,53 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard let tab = activeTab else { return }
         focusedController?.setFocus(false)
         tab.registry.pauseAll()
+    }
+
+    private func syncWindowTitleWithFocusedPane(in tab: Tab) {
+        syncTabTitleWithFocusedPane(in: tab)
+    }
+
+    /// Keeps the tab label and window title aligned with whichever pane is focused (terminal or browser).
+    private func syncTabTitleWithFocusedPane(in tab: Tab) {
+        guard let fid = tab.splitTree.focusedLeafID else { return }
+        if tab.usesCustomTitle { return }
+
+        if tab.registry.browserController(for: fid) != nil {
+            tab.title = resolvedBrowserTabTitle(tab: tab, focusedPaneID: fid)
+        } else {
+            tab.title = resolvedTerminalTabTitle(tab: tab, focusedPaneID: fid)
+        }
+
+        if tab.id == activeTab?.id {
+            window?.title = tab.tabBarLabel
+        }
+        refreshHostingView()
+    }
+
+    private func resolvedTerminalTabTitle(tab: Tab, focusedPaneID: UUID) -> String {
+        if let surfaceTitle = tab.registry.title(for: focusedPaneID), !surfaceTitle.isEmpty {
+            return surfaceTitle
+        }
+        return ""
+    }
+
+    private func resolvedBrowserTabTitle(tab: Tab, focusedPaneID: UUID) -> String {
+        guard let c = tab.registry.browserController(for: focusedPaneID) else { return "" }
+        if c.browserState.url.absoluteString.lowercased() == "about:blank" {
+            return ""
+        }
+        if let raw = tab.registry.title(for: focusedPaneID), !raw.isEmpty {
+            return raw
+        }
+        return ""
+    }
+
+    private func pageTitleForBrowserCallbacks(tab: Tab, paneID: UUID, suggestedTitle: String) -> String {
+        guard let c = tab.registry.browserController(for: paneID) else { return suggestedTitle }
+        if c.browserState.url.absoluteString.lowercased() == "about:blank" {
+            return ""
+        }
+        return suggestedTitle
     }
 
     // MARK: - Tab Operations
@@ -497,6 +596,168 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         updateLayout()
         refreshHostingView()
         restoreFocus()
+    }
+
+    @discardableResult
+    func createBrowserTab(initialURL: URL = URL(string: "about:blank")!) -> UUID? {
+        guard let workspace = windowSession.activeWorkspace else { return nil }
+
+        let tabTitle: String
+        if initialURL.absoluteString.lowercased() == "about:blank" {
+            tabTitle = ""
+        } else {
+            tabTitle = initialURL.host ?? initialURL.absoluteString
+        }
+        let tab = Tab(title: tabTitle)
+        guard let browserPaneID = tab.registry.createBrowser(initialURL: initialURL),
+              let controller = tab.registry.browserController(for: browserPaneID) else {
+            logger.error("Failed to create browser tab")
+            return nil
+        }
+
+        tab.splitTree = SplitTree(leafID: browserPaneID)
+        wireBrowserCallbacks(controller: controller, paneID: browserPaneID, tab: tab)
+
+        activeTab?.registry.pauseAll()
+
+        workspace.insertTabAdjacentToActive(tab)
+        workspace.activeTabID = tab.id
+
+        rebuildSplitContainer()
+        updateLayout()
+        refreshHostingView()
+        restoreFocus()
+        scheduleFocusBrowserAddressBar(paneID: browserPaneID)
+        return browserPaneID
+    }
+
+    @discardableResult
+    private func createBrowserSplit(initialURL: URL = URL(string: "about:blank")!, direction: SplitDirection) -> UUID? {
+        guard let tab = activeTab,
+              let currentFocusID = tab.splitTree.focusedLeafID else { return nil }
+
+        guard let browserPaneID = tab.registry.createBrowser(initialURL: initialURL),
+              let controller = tab.registry.browserController(for: browserPaneID) else {
+            logger.error("Failed to create browser split")
+            return nil
+        }
+
+        wireBrowserCallbacks(controller: controller, paneID: browserPaneID, tab: tab)
+
+        let insertionDirection: SpatialDirection = direction == .horizontal ? .right : .down
+        let (newTree, _) = tab.splitTree.insert(at: currentFocusID, toward: insertionDirection, newID: browserPaneID)
+        tab.splitTree = newTree
+        updateLayout()
+        focusPane(in: tab, targetID: browserPaneID)
+        scheduleFocusBrowserAddressBar(paneID: browserPaneID)
+        return browserPaneID
+    }
+
+    private func scheduleFocusBrowserAddressBar(paneID: UUID) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            self?.requestFocusBrowserAddressBar(paneID: paneID)
+        }
+    }
+
+    private func requestFocusBrowserAddressBar(paneID: UUID) {
+        guard window?.isKeyWindow == true else { return }
+        resignEphemeralFirstRespondersForSwiftUIEditing()
+        window?.makeFirstResponder(hostingView)
+        NotificationCenter.default.post(
+            name: .frosttyFocusBrowserAddressBar,
+            object: nil,
+            userInfo: ["paneID": paneID]
+        )
+    }
+
+    private func focusBrowserAddressBar() {
+        guard let tab = activeTab,
+              let focusedID = tab.splitTree.focusedLeafID,
+              tab.registry.browserController(for: focusedID) != nil else { return }
+        requestFocusBrowserAddressBar(paneID: focusedID)
+    }
+
+    /// Closes the focused browser pane (Ctrl+D). If it is the only pane, closes the tab.
+    private func closeActiveBrowserPaneIfPossible() {
+        guard let tab = activeTab,
+              let fid = tab.splitTree.focusedLeafID,
+              tab.registry.browserController(for: fid) != nil else { return }
+
+        let (newTree, focusTarget) = tab.splitTree.remove(fid)
+        tab.registry.destroyPane(fid)
+        tab.splitTree = newTree
+
+        if closingTabIDs.contains(tab.id) { return }
+
+        if tab.splitTree.isEmpty {
+            closeTab(id: tab.id)
+            return
+        }
+
+        if tab.id == activeTab?.id {
+            updateLayout()
+            if let focusID = focusTarget {
+                focusPane(in: tab, targetID: focusID)
+            }
+        }
+    }
+
+    /// Resign terminal / in-pane web views so SwiftUI fields (tab rename, browser omnibar) can take focus.
+    private func resignEphemeralFirstRespondersForSwiftUIEditing() {
+        if let surfaceView = window?.firstResponder as? SurfaceView {
+            surfaceView.surfaceController?.setFocus(false)
+        }
+        if let view = window?.firstResponder as? NSView {
+            var current: NSView? = view
+            while let c = current {
+                if c is BrowserPaneView {
+                    window?.makeFirstResponder(nil)
+                    return
+                }
+                current = c.superview
+            }
+        }
+    }
+
+    @objc func newBrowserTab(_ sender: Any? = nil) {
+        openBrowser(destination: .newTab)
+    }
+
+    private func openBrowser(destination: BrowserOpenDestination) {
+        switch destination {
+        case .newTab:
+            _ = createBrowserTab()
+        case .split(let direction):
+            _ = createBrowserSplit(direction: direction)
+        }
+    }
+
+    private func wireBrowserCallbacks(controller: BrowserTabController, paneID: UUID, tab: Tab) {
+        controller.browserView.onTitleChanged = { [weak self, weak tab] title in
+            guard let self, let tab else { return }
+            guard !tab.usesCustomTitle else { return }
+            let shouldUpdateTabTitle = tab.splitTree.allLeafIDs().count == 1 || tab.splitTree.focusedLeafID == paneID
+            guard shouldUpdateTabTitle else { return }
+            let next = self.pageTitleForBrowserCallbacks(tab: tab, paneID: paneID, suggestedTitle: title)
+            tab.title = next
+            if tab.id == self.activeTab?.id, tab.splitTree.focusedLeafID == paneID {
+                self.window?.title = tab.tabBarLabel
+            }
+            self.refreshHostingView()
+        }
+
+        controller.browserView.onURLChanged = { [weak self, weak tab, weak controller] _ in
+            guard let self, let tab, let controller else { return }
+            guard !tab.usesCustomTitle else { return }
+            let shouldRefreshTitle = tab.splitTree.allLeafIDs().count == 1 || tab.splitTree.focusedLeafID == paneID
+            guard shouldRefreshTitle else { return }
+            let next = self.pageTitleForBrowserCallbacks(tab: tab, paneID: paneID, suggestedTitle: controller.title)
+            tab.title = next
+            if tab.id == self.activeTab?.id, tab.splitTree.focusedLeafID == paneID {
+                self.window?.title = tab.tabBarLabel
+            }
+            self.refreshHostingView()
+        }
     }
 
     @objc func requestCloseActiveTab(_ sender: Any? = nil) {
@@ -726,6 +987,14 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             tab.title = trimmed
+            tab.usesCustomTitle = true
+            if tab.id == activeTab?.id {
+                window?.title = trimmed
+            }
+        } else {
+            tab.usesCustomTitle = false
+            tab.title = ""
+            syncTabTitleWithFocusedPane(in: tab)
         }
         refreshHostingView()
     }
@@ -759,7 +1028,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard let window = self.window else { return }
 
         let config = GhosttyAppController.shared.configManager
-        let opacity = max(0.0, min(config.backgroundOpacity, 1.0))
+        let opacity = config.backgroundOpacity
         let shouldUseTransparentBackground = !window.styleMask.contains(.fullScreen) && opacity < 1.0
 
         if shouldUseTransparentBackground {
@@ -803,10 +1072,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         tab.splitTree = newTree
 
         updateLayout()
-
-        if let newView = tab.registry.view(for: newSurfaceID) {
-            window.makeFirstResponder(newView)
-        }
+        focusPane(in: tab, targetID: newSurfaceID)
     }
 
     private func navigatePane(direction: FocusDirection) {
@@ -845,20 +1111,19 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard steps > 0,
               let tab = activeTab,
               let focusedID = tab.splitTree.focusedLeafID,
-              let container = splitContainerView,
-              let focusedView = tab.registry.view(for: focusedID) else { return }
+              let container = splitContainerView else { return }
 
         let amountPerStep: CGFloat
 
-        switch direction {
-        case .left:
-            amountPerStep = focusedView.cachedCellSize.width
-        case .right:
-            amountPerStep = focusedView.cachedCellSize.width
-        case .up:
-            amountPerStep = focusedView.cachedCellSize.height
-        case .down:
-            amountPerStep = focusedView.cachedCellSize.height
+        if let focusedView = tab.registry.view(for: focusedID) {
+            switch direction {
+            case .left, .right:
+                amountPerStep = focusedView.cachedCellSize.width
+            case .up, .down:
+                amountPerStep = focusedView.cachedCellSize.height
+            }
+        } else {
+            amountPerStep = 24
         }
 
         guard amountPerStep > 0 else { return }
@@ -891,35 +1156,32 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func focusPane(in tab: Tab, targetID: UUID) {
-        guard let targetView = tab.registry.view(for: targetID) else { return }
+        guard tab.registry.paneView(for: targetID) != nil else { return }
         tab.splitTree.focusedLeafID = targetID
-        synchronizeSurfaceFocus(in: tab, focusedID: targetID)
-        window?.makeFirstResponder(targetView)
-        markFocusedSurface(in: tab, focusedID: targetID)
+        synchronizePaneFocus(in: tab, focusedID: targetID)
+        _ = tab.registry.makeFirstResponder(for: targetID, in: window)
+        markFocusedPane(in: tab, focusedID: targetID)
         updateLayout()
     }
 
-    private func synchronizeSurfaceFocus(in tab: Tab, focusedID: UUID) {
+    private func synchronizePaneFocus(in tab: Tab, focusedID: UUID) {
         for id in tab.registry.allIDs where id != focusedID {
             tab.registry.controller(for: id)?.setFocus(false)
-            tab.registry.controller(for: id)?.refresh()
             tab.registry.view(for: id)?.resetFocusState()
-            tab.registry.view(for: id)?.needsDisplay = true
+            tab.registry.paneView(for: id)?.needsDisplay = true
         }
     }
 
-    private func markFocusedSurface(in tab: Tab, focusedID: UUID) {
+    private func markFocusedPane(in tab: Tab, focusedID: UUID) {
         tab.registry.controller(for: focusedID)?.setFocus(true)
         tab.registry.controller(for: focusedID)?.refresh()
+        syncTabTitleWithFocusedPane(in: tab)
+        tab.registry.paneView(for: focusedID)?.needsDisplay = true
     }
 
     func renameActiveTab() {
         guard let tab = activeTab else { return }
-        // Resign the terminal surface as first responder so the SwiftUI TextField
-        // can become the actual NSWindow first responder for selectAll to work.
-        if let surfaceView = window?.firstResponder as? SurfaceView {
-            surfaceView.surfaceController?.setFocus(false)
-        }
+        resignEphemeralFirstRespondersForSwiftUIEditing()
         window?.makeFirstResponder(hostingView)
         NotificationCenter.default.post(
             name: .frosttyRenameTab,
@@ -950,6 +1212,29 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         let (newTree, _) = treeWithoutSource.insert(at: destinationID, toward: direction, newID: sourceID)
         tab.splitTree = newTree
         focusPane(in: tab, targetID: sourceID)
+        postPaneRestructureCompleted(sourceTabID: tab.id, destinationTabID: tab.id, paneID: sourceID)
+        syncTabTitlesForRestructuredPanes(sourceTabID: tab.id, destinationTabID: tab.id)
+    }
+
+    private func postPaneRestructureCompleted(sourceTabID: UUID, destinationTabID: UUID, paneID: UUID) {
+        NotificationCenter.default.post(
+            name: .frosttyPaneRestructureCompleted,
+            object: nil,
+            userInfo: [
+                FrosttyUserInfoKey.paneRestructureSourceTabID: sourceTabID,
+                FrosttyUserInfoKey.paneRestructureDestinationTabID: destinationTabID,
+                FrosttyUserInfoKey.paneRestructurePaneID: paneID
+            ]
+        )
+    }
+
+    private func syncTabTitlesForRestructuredPanes(sourceTabID: UUID, destinationTabID: UUID) {
+        for workspace in windowSession.workspaces {
+            for tab in workspace.tabs where tab.id == sourceTabID || tab.id == destinationTabID {
+                syncTabTitleWithFocusedPane(in: tab)
+            }
+        }
+        refreshHostingView()
     }
 
     private func handlePaneDetachToNewTab(sourceID: UUID, screenPoint: NSPoint) {
@@ -978,6 +1263,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         windowSession.activeWorkspaceID = move.sourceWorkspace.id
 
         activateCurrentTab()
+        postPaneRestructureCompleted(sourceTabID: move.sourceTab.id, destinationTabID: newTab.id, paneID: move.paneID)
+        syncTabTitlesForRestructuredPanes(sourceTabID: move.sourceTab.id, destinationTabID: newTab.id)
     }
 
     private func movePaneToWorkspace(sourceID: UUID, workspaceID: UUID) {
@@ -992,6 +1279,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         finalizeSourceWorkspaceAfterPaneMove(move, destinationWorkspaceID: targetWorkspace.id)
 
         activateCurrentTab()
+        postPaneRestructureCompleted(sourceTabID: move.sourceTab.id, destinationTabID: newTab.id, paneID: move.paneID)
+        syncTabTitlesForRestructuredPanes(sourceTabID: move.sourceTab.id, destinationTabID: newTab.id)
     }
 
     private func movePaneToNewWorkspace(sourceID: UUID, insertionSlot: Int) {
@@ -1010,11 +1299,13 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         finalizeSourceWorkspaceAfterPaneMove(move, destinationWorkspaceID: newWorkspace.id)
 
         activateCurrentTab()
+        postPaneRestructureCompleted(sourceTabID: move.sourceTab.id, destinationTabID: newTab.id, paneID: move.paneID)
+        syncTabTitlesForRestructuredPanes(sourceTabID: move.sourceTab.id, destinationTabID: newTab.id)
     }
 
     private func detachPaneForMove(_ sourceID: UUID) -> DetachedPaneMove? {
         guard let (sourceTab, sourceWorkspace) = findTabContainingPane(id: sourceID),
-              let entry = sourceTab.registry.detachSurface(sourceID) else {
+              let entry = sourceTab.registry.detachPane(sourceID) else {
             return nil
         }
 
@@ -1030,7 +1321,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         } else {
             let (newSourceTree, _) = sourceTab.splitTree.remove(sourceID)
             guard !newSourceTree.isEmpty else {
-                sourceTab.registry.attachDetachedSurface(entry, id: sourceID)
+                sourceTab.registry.attachDetachedPane(entry, id: sourceID)
                 if sourceTabWasActive {
                     activateCurrentTab()
                 }
@@ -1048,15 +1339,23 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             sourceWorkspace: sourceWorkspace,
             sourceTabWasActive: sourceTabWasActive,
             sourceTabRemoved: sourceTabRemoved,
-            newTabTitle: entry.view.title.isEmpty ? sourceTab.title : entry.view.title,
-            newTabPWD: entry.view.pwd ?? sourceTab.pwd
+            newTabTitle: {
+                if let title = entry.title, !title.isEmpty {
+                    return title
+                }
+                return sourceTab.title
+            }(),
+            newTabPWD: entry.pwd ?? sourceTab.pwd
         )
     }
 
     private func makeDetachedPaneTab(from move: DetachedPaneMove) -> Tab {
         let newTab = Tab(title: move.newTabTitle, pwd: move.newTabPWD)
-        newTab.registry.attachDetachedSurface(move.entry, id: move.paneID)
+        newTab.registry.attachDetachedPane(move.entry, id: move.paneID)
         newTab.splitTree = SplitTree(leafID: move.paneID)
+        if let controller = newTab.registry.browserController(for: move.paneID) {
+            wireBrowserCallbacks(controller: controller, paneID: move.paneID, tab: newTab)
+        }
         return newTab
     }
 
@@ -1117,6 +1416,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
                            name: .frosttyWillBeginEditing, object: nil)
         center.addObserver(self, selector: #selector(handleSurfaceDidFocus(_:)),
                            name: .frosttySurfaceDidFocus, object: nil)
+        center.addObserver(self, selector: #selector(handleBrowserPaneDidFocus(_:)),
+                           name: .frosttyBrowserPaneDidFocus, object: nil)
     }
 
     // MARK: - Notification Handlers
@@ -1162,10 +1463,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         tab.splitTree = newTree
 
         updateLayout()
-
-        if let newView = tab.registry.view(for: newSurfaceID) {
-            window?.makeFirstResponder(newView)
-        }
+        focusPane(in: tab, targetID: newSurfaceID)
     }
 
     @objc private func handleCloseSurfaceNotification(_ notification: Notification) {
@@ -1197,8 +1495,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
         if owningTab.id == activeTab?.id {
             updateLayout()
-            if let focusID = focusTarget, let focusView = owningTab.registry.view(for: focusID) {
-                window?.makeFirstResponder(focusView)
+            if let focusID = focusTarget {
+                focusPane(in: owningTab, targetID: focusID)
             }
         }
     }
@@ -1280,15 +1578,16 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard let surfaceView = notification.object as? SurfaceView else { return }
         guard belongsToThisWindow(surfaceView) else { return }
         guard let title = notification.userInfo?["title"] as? String else { return }
-        guard let tab = activeTab else { return }
+        guard let (tab, _) = findTab(for: surfaceView) else { return }
+        guard !tab.usesCustomTitle else { return }
+        guard let surfaceID = tab.registry.id(for: surfaceView),
+              tab.splitTree.focusedLeafID == surfaceID else { return }
 
-        if let focusedID = tab.splitTree.focusedLeafID,
-           let focusedView = tab.registry.view(for: focusedID),
-           focusedView === surfaceView {
-            window?.title = title
-            tab.title = title
-            refreshHostingView()
+        tab.title = title
+        if tab.id == activeTab?.id {
+            window?.title = tab.tabBarLabel
         }
+        refreshHostingView()
     }
 
     @objc private func handleSetPwdNotification(_ notification: Notification) {
@@ -1349,11 +1648,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func handleWillBeginEditing(_ notification: Notification) {
-        // Resign the terminal surface so the SwiftUI TextField can become
-        // the actual NSWindow first responder (needed for selectAll to work).
-        if let surfaceView = window?.firstResponder as? SurfaceView {
-            surfaceView.surfaceController?.setFocus(false)
-        }
+        resignEphemeralFirstRespondersForSwiftUIEditing()
         window?.makeFirstResponder(hostingView)
     }
 
@@ -1365,8 +1660,23 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard tab.splitTree.focusedLeafID != surfaceID else { return }
 
         tab.splitTree.focusedLeafID = surfaceID
-        synchronizeSurfaceFocus(in: tab, focusedID: surfaceID)
-        markFocusedSurface(in: tab, focusedID: surfaceID)
+        synchronizePaneFocus(in: tab, focusedID: surfaceID)
+        markFocusedPane(in: tab, focusedID: surfaceID)
+        if tab.id == activeTab?.id {
+            updateLayout()
+        }
+    }
+
+    @objc private func handleBrowserPaneDidFocus(_ notification: Notification) {
+        guard let paneView = notification.object as? BrowserPaneView else { return }
+        guard belongsToThisWindow(paneView) else { return }
+        guard let (tab, _) = findTab(for: paneView) else { return }
+        guard let paneID = tab.registry.paneID(for: paneView) else { return }
+        guard tab.splitTree.focusedLeafID != paneID else { return }
+
+        tab.splitTree.focusedLeafID = paneID
+        synchronizePaneFocus(in: tab, focusedID: paneID)
+        markFocusedPane(in: tab, focusedID: paneID)
         if tab.id == activeTab?.id {
             updateLayout()
         }
@@ -1382,6 +1692,17 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         for workspace in windowSession.workspaces {
             for tab in workspace.tabs {
                 if tab.registry.id(for: surfaceView) != nil {
+                    return (tab, workspace)
+                }
+            }
+        }
+        return nil
+    }
+
+    private func findTab(for browserPaneView: BrowserPaneView) -> (Tab, Workspace)? {
+        for workspace in windowSession.workspaces {
+            for tab in workspace.tabs {
+                if tab.registry.paneID(for: browserPaneView) != nil {
                     return (tab, workspace)
                 }
             }
@@ -1413,6 +1734,9 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         GhosttyAppController.shared.setFocus(true)
         focusedController?.setFocus(true)
         updateWindowBackgroundAppearance()
+        if let tab = activeTab {
+            syncWindowTitleWithFocusedPane(in: tab)
+        }
         restoreFocus()
     }
 

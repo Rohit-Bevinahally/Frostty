@@ -12,7 +12,12 @@ private let logger = Logger(subsystem: "com.frostty.terminal", category: "AppDel
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var appSession = AppSession()
+    private(set) var browserTabBroker = BrowserTabBroker()
     private var windowControllers: [FrosttyWindowController] = []
+
+    var allWindowControllers: [FrosttyWindowController] {
+        windowControllers
+    }
 
     private var frontmostWindowController: FrosttyWindowController? {
         if let controller = NSApp.keyWindow?.windowController as? FrosttyWindowController {
@@ -46,6 +51,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupMainMenu()
         registerNotificationObservers()
 
+        browserTabBroker.appDelegate = self
+        BrowserServer.shared.toolHandler = BrowserToolHandler(broker: browserTabBroker)
+        BrowserServer.shared.start()
+
         createInitialWindow()
     }
 
@@ -76,6 +85,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        BrowserServer.shared.stop()
         windowControllers.removeAll()
     }
 
@@ -124,6 +134,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         frontmostWindowController?.requestCloseActiveTab(sender)
     }
 
+    @objc func createNewBrowserTabFromMenu() {
+        frontmostWindowController?.newBrowserTab(nil)
+    }
+
     func removeWindowController(_ controller: FrosttyWindowController) {
         appSession.removeWindow(id: controller.windowSession.id)
         windowControllers.removeAll { $0 === controller }
@@ -147,6 +161,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let fileMenuItem = NSMenuItem()
         let fileMenu = NSMenu(title: "File")
         fileMenu.addItem(withTitle: "New Workspace", action: #selector(createNewWorkspaceFromMenu), keyEquivalent: "n")
+        let browserTabItem = NSMenuItem(
+            title: "New Browser Tab",
+            action: #selector(createNewBrowserTabFromMenu),
+            keyEquivalent: "t"
+        )
+        browserTabItem.keyEquivalentModifierMask = [.command, .shift]
+        browserTabItem.target = self
+        fileMenu.addItem(browserTabItem)
         fileMenu.addItem(.separator())
 
         let closeItem = NSMenuItem(title: "Close", action: #selector(closeActiveTab(_:)), keyEquivalent: "w")

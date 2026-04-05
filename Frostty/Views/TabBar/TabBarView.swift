@@ -285,12 +285,6 @@ struct TabItemView: View {
                     )
                     .focused($isFieldFocused)
                     .onExitCommand { cancelRename() }
-                    .onAppear {
-                        isFieldFocused = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
-                        }
-                    }
             } else {
                 Text(displayedTitle)
                     .font(.system(size: 16, weight: isActive ? .bold : .medium, design: .monospaced))
@@ -341,6 +335,19 @@ struct TabItemView: View {
                 editText = newValue
             }
         }
+        .onChange(of: isEditing) { _, editing in
+            guard editing else { return }
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .frosttyWillBeginEditing, object: nil)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+                isFieldFocused = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                guard isEditing else { return }
+                NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+            }
+        }
     }
 
     private var capsuleFill: Color {
@@ -354,7 +361,7 @@ struct TabItemView: View {
     }
 
     private var displayedTitle: String {
-        let raw = tab.title.isEmpty ? "Terminal" : tab.title
+        let raw = tab.tabBarLabel
         let maxLen = isActive ? 40 : 15
         guard raw.count > maxLen else {
             return isActive ? " \(raw)" : "\(displayIndex) \(raw)"
@@ -365,9 +372,7 @@ struct TabItemView: View {
     }
 
     private func beginRename() {
-        // Ask the window controller to resign the terminal surface first
-        NotificationCenter.default.post(name: .frosttyWillBeginEditing, object: nil)
-        editText = tab.title.isEmpty ? "Terminal" : tab.title
+        editText = tab.tabBarLabel
         editingWidth = renameFieldWidth(for: editText)
         isEditing = true
     }
@@ -387,7 +392,7 @@ struct TabItemView: View {
     }
 
     private func renameFieldWidth(for text: String) -> CGFloat {
-        let displayText = text.isEmpty ? "Terminal" : text
+        let displayText = text.isEmpty ? tab.tabBarLabel : text
         let font = NSFont.monospacedSystemFont(ofSize: 16, weight: .bold)
         let measuredWidth = ceil((displayText as NSString).size(withAttributes: [.font: font]).width)
         let minWidth: CGFloat = isActive ? 120 : 96

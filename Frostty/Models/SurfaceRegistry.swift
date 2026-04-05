@@ -1,7 +1,7 @@
 // SurfaceRegistry.swift
 // Frostty
 //
-// Mutable UUID->SurfaceView mapping. Controller layer for managing surface lifecycle.
+// Mutable UUID->pane mapping. Controller layer for managing terminal and browser pane lifecycle.
 
 import AppKit
 import GhosttyKit
@@ -11,17 +11,143 @@ private let logger = Logger(subsystem: "com.frostty.terminal", category: "Surfac
 
 @MainActor
 final class SurfaceRegistry {
-
-    struct RegistryEntry {
-        let view: SurfaceView
-        let controller: GhosttySurfaceController
-        var state: EntryState
-    }
-
     enum EntryState: Equatable, Sendable {
         case creating
         case attached
         case destroyed
+    }
+
+    final class TerminalEntry {
+        let view: SurfaceView
+        let controller: GhosttySurfaceController
+        var state: EntryState
+
+        init(view: SurfaceView, controller: GhosttySurfaceController, state: EntryState) {
+            self.view = view
+            self.controller = controller
+            self.state = state
+        }
+    }
+
+    final class BrowserEntry {
+        let view: BrowserPaneView
+        let controller: BrowserTabController
+        var state: EntryState
+
+        init(view: BrowserPaneView, controller: BrowserTabController, state: EntryState) {
+            self.view = view
+            self.controller = controller
+            self.state = state
+        }
+    }
+
+    @MainActor
+    enum RegistryEntry {
+        case terminal(TerminalEntry)
+        case browser(BrowserEntry)
+
+        var state: EntryState {
+            get {
+                switch self {
+                case .terminal(let entry):
+                    return entry.state
+                case .browser(let entry):
+                    return entry.state
+                }
+            }
+            set {
+                switch self {
+                case .terminal(let entry):
+                    entry.state = newValue
+                case .browser(let entry):
+                    entry.state = newValue
+                }
+            }
+        }
+
+        var paneView: NSView {
+            switch self {
+            case .terminal(let entry):
+                return entry.view
+            case .browser(let entry):
+                return entry.view
+            }
+        }
+
+        var terminalView: SurfaceView? {
+            guard case .terminal(let entry) = self else { return nil }
+            return entry.view
+        }
+
+        var terminalController: GhosttySurfaceController? {
+            guard case .terminal(let entry) = self else { return nil }
+            return entry.controller
+        }
+
+        var browserController: BrowserTabController? {
+            guard case .browser(let entry) = self else { return nil }
+            return entry.controller
+        }
+
+        var title: String? {
+            switch self {
+            case .terminal(let entry):
+                return entry.view.title
+            case .browser(let entry):
+                return entry.controller.title
+            }
+        }
+
+        var pwd: String? {
+            switch self {
+            case .terminal(let entry):
+                return entry.view.pwd
+            case .browser:
+                return nil
+            }
+        }
+
+        func setFocus(_ focused: Bool) {
+            switch self {
+            case .terminal(let entry):
+                entry.controller.setFocus(focused)
+                if !focused {
+                    entry.view.resetFocusState()
+                }
+            case .browser:
+                break
+            }
+        }
+
+        func refresh() {
+            switch self {
+            case .terminal(let entry):
+                entry.controller.refresh()
+                entry.view.needsDisplay = true
+            case .browser(let entry):
+                entry.view.needsLayout = true
+                entry.view.needsDisplay = true
+            }
+        }
+
+        @discardableResult
+        func makeFirstResponder(in window: NSWindow?) -> Bool {
+            guard let window else { return false }
+            switch self {
+            case .terminal(let entry):
+                let view = entry.view
+                guard view.window === window else { return false }
+                return window.makeFirstResponder(view)
+            case .browser(let entry):
+                let pane = entry.view
+                guard pane.window === window else { return false }
+                return entry.controller.focus(in: window)
+            }
+        }
+
+        func removeFromSuperview() {
+            paneView.removeFromSuperview()
+        }
     }
 
     private var entries: [UUID: RegistryEntry] = [:]
@@ -48,7 +174,7 @@ final class SurfaceRegistry {
         surfaceView.surfaceController = controller
         let id = controller.id
 
-        entries[id] = RegistryEntry(view: surfaceView, controller: controller, state: .attached)
+        entries[id] = .terminal(TerminalEntry(view: surfaceView, controller: controller, state: .attached))
         logger.info("Surface created and registered: \(id)")
         return id
     }
@@ -64,55 +190,103 @@ final class SurfaceRegistry {
         return createSurface(app: app, config: config)
     }
 
-    func destroySurface(_ id: UUID) {
-        guard var entry = entries[id] else { return }
-        guard entry.state != .destroyed else { return }
-        entry.state = .destroyed
-        entries[id] = entry
-        entry.controller.setOcclusion(true)
-        entry.view.removeFromSuperview()
-        entry.controller.requestClose()
-        entries.removeValue(forKey: id)
-        logger.info("Surface destroyed: \(id)")
+    func createBrowser(initialURL: URL = URL(string: "about:blank")!) -> UUID? {
+        let id = UUID()
+        let controller = BrowserTabController(initialURL: initialURL)
+        let paneView = BrowserPaneView(controller: controller, paneID: id)
+        entries[id] = .browser(BrowserEntry(view: paneView, controller: controller, state: .attached))
+        logger.info("Browser pane created and registered: \(id)")
+        return id
     }
 
-    func detachSurface(_ id: UUID) -> RegistryEntry? {
+    func destroyPane(_ id: UUID) {
+        guard var entry = entries[id] else { return }
+        guard entry.state != .destroyed else { return }
+
+        entry.state = .destroyed
+        entries[id] = entry
+
+        switch entry {
+        case .terminal(let terminalEntry):
+            terminalEntry.controller.setOcclusion(true)
+            terminalEntry.view.removeFromSuperview()
+            terminalEntry.controller.requestClose()
+        case .browser(let browserEntry):
+            browserEntry.view.removeFromSuperview()
+        }
+
+        entries.removeValue(forKey: id)
+        logger.info("Pane destroyed: \(id)")
+    }
+
+    func destroySurface(_ id: UUID) {
+        destroyPane(id)
+    }
+
+    func detachPane(_ id: UUID) -> RegistryEntry? {
         guard var entry = entries.removeValue(forKey: id) else { return nil }
         entry.state = .attached
-        entry.controller.setFocus(false)
-        entry.view.resetFocusState()
-        entry.view.removeFromSuperview()
-        logger.info("Surface detached from registry: \(id)")
+        entry.setFocus(false)
+        entry.removeFromSuperview()
+        logger.info("Pane detached from registry: \(id)")
         return entry
     }
 
-    func attachDetachedSurface(_ entry: RegistryEntry, id: UUID) {
-        var attachedEntry = entry
-        attachedEntry.state = .attached
-        attachedEntry.view.removeFromSuperview()
-        entries[id] = attachedEntry
-        logger.info("Detached surface attached to registry: \(id)")
+    func detachSurface(_ id: UUID) -> RegistryEntry? {
+        detachPane(id)
     }
 
-    func view(for id: UUID) -> SurfaceView? { entries[id]?.view }
-    func controller(for id: UUID) -> GhosttySurfaceController? { entries[id]?.controller }
+    func attachDetachedPane(_ entry: RegistryEntry, id: UUID) {
+        var attachedEntry = entry
+        attachedEntry.state = .attached
+        attachedEntry.removeFromSuperview()
+        entries[id] = attachedEntry
+        logger.info("Detached pane attached to registry: \(id)")
+    }
+
+    func attachDetachedSurface(_ entry: RegistryEntry, id: UUID) {
+        attachDetachedPane(entry, id: id)
+    }
+
+    func view(for id: UUID) -> SurfaceView? { entries[id]?.terminalView }
+    func paneView(for id: UUID) -> NSView? { entries[id]?.paneView }
+    func controller(for id: UUID) -> GhosttySurfaceController? { entries[id]?.terminalController }
+    func browserController(for id: UUID) -> BrowserTabController? { entries[id]?.browserController }
     func state(for id: UUID) -> EntryState? { entries[id]?.state }
+    func title(for id: UUID) -> String? { entries[id]?.title }
+    func pwd(for id: UUID) -> String? { entries[id]?.pwd }
+
+    func browserPaneIDs() -> [UUID] {
+        entries.compactMap { id, entry in
+            if case .browser = entry {
+                return id
+            }
+            return nil
+        }
+    }
 
     func id(for surfaceView: SurfaceView) -> UUID? {
-        entries.first(where: { $0.value.view === surfaceView })?.key
+        entries.first(where: { $0.value.terminalView === surfaceView })?.key
+    }
+
+    func paneID(for rootView: NSView) -> UUID? {
+        entries.first(where: { $0.value.paneView === rootView })?.key
+    }
+
+    @discardableResult
+    func makeFirstResponder(for id: UUID, in window: NSWindow?) -> Bool {
+        entries[id]?.makeFirstResponder(in: window) ?? false
     }
 
     func pauseAll() {
         for id in allIDs {
-            entries[id]?.controller.setFocus(false)
-            entries[id]?.view.resetFocusState()
+            entries[id]?.setFocus(false)
         }
     }
 
     func resumeAll() {
         for id in allIDs {
-            entries[id]?.controller.refresh()
-            entries[id]?.view.needsDisplay = true
+            entries[id]?.refresh()
         }
     }
 
@@ -121,9 +295,11 @@ final class SurfaceRegistry {
     func applyConfig(_ config: ghostty_config_t) {
         for id in allIDs {
             guard let entry = entries[id] else { continue }
-            entry.controller.updateConfig(config)
-            entry.controller.refresh()
-            entry.view.needsDisplay = true
+            guard let controller = entry.terminalController,
+                  let view = entry.terminalView else { continue }
+            controller.updateConfig(config)
+            controller.refresh()
+            view.needsDisplay = true
         }
     }
 }
