@@ -2,9 +2,8 @@
 // Frostty
 //
 // Wraps a SurfaceView inside an NSScrollView to provide a native scrollbar
-// for terminal scrollback. The SurfaceView is placed on top of (not inside)
-// the scroll view, which uses an empty document view sized to represent the
-// total scrollback height.
+// for terminal scrollback. The scroll view owns the document geometry while
+// the SurfaceView stays aligned to the visible rect.
 
 @preconcurrency import AppKit
 import SwiftUI
@@ -12,20 +11,6 @@ import SwiftUI
 /// Flipped document view so scroll coordinates match top-to-bottom orientation.
 private class FlippedView: NSView {
     override var isFlipped: Bool { true }
-}
-
-/// NSScrollView subclass that only intercepts hits on its scroller.
-/// All other hits pass through to the surfaceView underneath.
-private class OverlayScrollView: NSScrollView {
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        if let scroller = verticalScroller, !scroller.isHidden {
-            let scrollerPoint = scroller.convert(point, from: superview)
-            if scroller.bounds.contains(scrollerPoint) {
-                return super.hitTest(point)
-            }
-        }
-        return nil
-    }
 }
 
 enum PaneDropZone: Equatable {
@@ -101,7 +86,7 @@ class SurfaceScrollView: NSView {
 
     // MARK: - Instance Properties
 
-    private let scrollView = OverlayScrollView()
+    private let scrollView = NSScrollView()
     private let documentContentView = FlippedView() // documentView
     private let paneDropOverlayView = PaneDropOverlayView()
     private let paneHandleHostingView = PaneHandleHostingView(rootView: AnyView(EmptyView()))
@@ -132,9 +117,6 @@ class SurfaceScrollView: NSView {
     private var lastSentRow: Int = -1
     private var lastKnownTotal: Int = 0
     private var lastKnownLen: Int = 0
-
-    private var pendingScrollRow: Int?
-    private var throttleScheduled = false
 
     private var cellSizeObserver: NSObjectProtocol?
     private var configChangeObserver: NSObjectProtocol?
@@ -179,7 +161,6 @@ class SurfaceScrollView: NSView {
 
     deinit {
         MainActor.assumeIsolated {
-            pendingScrollRow = nil
             if let obs = cellSizeObserver { NotificationCenter.default.removeObserver(obs) }
             if let obs = configChangeObserver { NotificationCenter.default.removeObserver(obs) }
             if let obs = startSearchObserver { NotificationCenter.default.removeObserver(obs) }
@@ -191,17 +172,44 @@ class SurfaceScrollView: NSView {
     }
 
     override var isFlipped: Bool { true }
+    override var safeAreaInsets: NSEdgeInsets { NSEdgeInsetsZero }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard NSScroller.preferredScrollerStyle == .legacy else { return }
+        scrollView.flashScrollers()
+    }
+
+    override func updateTrackingAreas() {
+        trackingAreas.forEach { removeTrackingArea($0) }
+        super.updateTrackingAreas()
+
+        guard let scroller = scrollView.verticalScroller else { return }
+
+        addTrackingArea(NSTrackingArea(
+            rect: convert(scroller.bounds, from: scroller),
+            options: [
+                .mouseMoved,
+                .activeInKeyWindow,
+            ],
+            owner: self,
+            userInfo: nil
+        ))
+    }
 
     // MARK: - Setup
 
     private func setupScrollView() {
-        // Configure overlay-style scrollbar
         scrollView.scrollerStyle = .overlay
-        scrollView.hasVerticalScroller = true
+        scrollView.hasVerticalScroller = false
         scrollView.hasHorizontalScroller = false
         scrollView.drawsBackground = false
-        scrollView.autohidesScrollers = true
+        scrollView.autohidesScrollers = false
         scrollView.scrollerKnobStyle = .default
+        scrollView.usesPredominantAxisScrolling = true
+        scrollView.contentView.clipsToBounds = false
+        scrollView.contentView.postsBoundsChangedNotifications = true
+
+        documentContentView.addSubview(surfaceView)
 
         // The documentView is an empty NSView that defines scrollable height
         scrollView.documentView = documentContentView
@@ -210,10 +218,22 @@ class SurfaceScrollView: NSView {
         scrollView.verticalScrollElasticity = .none
         scrollView.horizontalScrollElasticity = .none
 
-        addSubview(surfaceView)
         addSubview(scrollView)
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(scrollViewContentBoundsDidChange(_:)),
+            name: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView
+        )
+
         // Register for live scroll notifications
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(scrollViewWillStartLiveScroll(_:)),
+            name: NSScrollView.willStartLiveScrollNotification,
+            object: scrollView
+        )
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(scrollViewDidLiveScroll(_:)),
@@ -225,6 +245,12 @@ class SurfaceScrollView: NSView {
             selector: #selector(scrollViewDidEndLiveScroll(_:)),
             name: NSScrollView.didEndLiveScrollNotification,
             object: scrollView
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePreferredScrollerStyleChange(_:)),
+            name: NSScroller.preferredScrollerStyleDidChangeNotification,
+            object: nil
         )
 
         // Apply scrollbar config
@@ -288,6 +314,9 @@ class SurfaceScrollView: NSView {
     private func applyScrollbarConfig() {
         let mode = GhosttyAppController.shared.configManager.scrollbarMode
         scrollView.hasVerticalScroller = (mode == .system)
+        scrollView.scrollerStyle = .overlay
+        scrollView.autohidesScrollers = false
+        updateTrackingAreas()
     }
 
     // MARK: - Layout
@@ -368,10 +397,15 @@ class SurfaceScrollView: NSView {
             )
         }
 
-        // Surface is a sibling of scrollView (not inside it), so it stays at origin.
-        surfaceView.frame.origin = .zero
+        synchronizeSurfaceView()
+        updateTrackingAreas()
 
         layoutSearchBar()
+    }
+
+    private func synchronizeSurfaceView() {
+        let visibleRect = scrollView.contentView.documentVisibleRect
+        surfaceView.frame.origin = visibleRect.origin
     }
 
     // MARK: - Scrollbar Update (Core -> UI)
@@ -381,7 +415,10 @@ class SurfaceScrollView: NSView {
             total: state.total,
             offset: state.offset,
             len: state.len
-        ) else { return }
+        ) else {
+            handleClearedScrollbarState()
+            return
+        }
 
         lastKnownTotal = validated.total
         lastKnownLen = validated.len
@@ -403,6 +440,9 @@ class SurfaceScrollView: NSView {
         // Skip position update if user is dragging scrollbar
         guard !isLiveScrolling else { return }
 
+        // Keep UI->core dedup aligned with the current core scrollbar position.
+        lastSentRow = validated.offset
+
         // Skip if this is the same offset we already applied
         guard validated.offset != lastAppliedOffset else { return }
         lastAppliedOffset = validated.offset
@@ -411,19 +451,48 @@ class SurfaceScrollView: NSView {
         let scrollY = Self.offsetToScrollY(offset: validated.offset, cellHeight: cellHeight)
         scrollView.contentView.scroll(to: NSPoint(x: 0, y: scrollY))
         scrollView.reflectScrolledClipView(scrollView.contentView)
-        scrollView.flashScrollers()
+        synchronizeSurfaceView()
+        updateTrackingAreas()
+    }
 
-        // Surface stays at origin; ghostty re-renders the visible content.
-        surfaceView.frame.origin = .zero
+    private func handleClearedScrollbarState() {
+        lastKnownTotal = 0
+        lastKnownLen = 0
+        lastAppliedOffset = -1
+        lastSentRow = 0
+
+        let contentSize = bounds.size
+        guard contentSize.width > 0, contentSize.height > 0 else { return }
+
+        documentContentView.frame = NSRect(
+            x: 0,
+            y: 0,
+            width: contentSize.width,
+            height: contentSize.height
+        )
+        scrollView.contentView.scroll(to: .zero)
+        scrollView.reflectScrolledClipView(scrollView.contentView)
+        synchronizeSurfaceView()
+        updateTrackingAreas()
     }
 
     // MARK: - Live Scroll (UI -> Core)
 
-    @objc private func scrollViewDidLiveScroll(_ notification: Notification) {
-        isLiveScrolling = true
+    @objc private func handlePreferredScrollerStyleChange(_ notification: Notification) {
+        scrollView.scrollerStyle = .overlay
+        synchronizeLayout()
+    }
 
-        // Surface stays at origin; ghostty re-renders the visible content.
-        surfaceView.frame.origin = .zero
+    @objc private func scrollViewContentBoundsDidChange(_ notification: Notification) {
+        synchronizeSurfaceView()
+    }
+
+    @objc private func scrollViewWillStartLiveScroll(_ notification: Notification) {
+        isLiveScrolling = true
+    }
+
+    @objc private func scrollViewDidLiveScroll(_ notification: Notification) {
+        synchronizeSurfaceView()
 
         guard cellHeight > 0 else { return }
 
@@ -431,13 +500,10 @@ class SurfaceScrollView: NSView {
         let row = Self.scrollYToRow(scrollY: scrollY, cellHeight: cellHeight)
         let clampedRow = Self.clampRow(row, total: lastKnownTotal, len: lastKnownLen)
 
-        scheduleLiveScrollUpdate(row: clampedRow)
+        sendScrollToRow(clampedRow)
     }
 
     @objc private func scrollViewDidEndLiveScroll(_ notification: Notification) {
-        // Flush any pending scroll
-        flushPendingScroll()
-
         // Final reconciliation: send the final position to core
         guard cellHeight > 0 else {
             isLiveScrolling = false
@@ -450,26 +516,6 @@ class SurfaceScrollView: NSView {
         sendScrollToRow(clampedRow)
 
         isLiveScrolling = false
-    }
-
-    // MARK: - Throttling
-
-    private func scheduleLiveScrollUpdate(row: Int) {
-        pendingScrollRow = row
-        guard !throttleScheduled else { return }
-        throttleScheduled = true
-        RunLoop.main.perform { [weak self] in
-            MainActor.assumeIsolated {
-                self?.flushPendingScroll()
-            }
-        }
-    }
-
-    private func flushPendingScroll() {
-        throttleScheduled = false
-        guard let row = pendingScrollRow else { return }
-        pendingScrollRow = nil
-        sendScrollToRow(row)
     }
 
     private func sendScrollToRow(_ row: Int) {
@@ -653,4 +699,3 @@ class SurfaceScrollView: NSView {
         onPaneDetachToNewTab?(sourcePaneID, screenPoint)
     }
 }
-

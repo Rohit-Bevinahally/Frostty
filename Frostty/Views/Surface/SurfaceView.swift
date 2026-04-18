@@ -672,19 +672,26 @@ class SurfaceView: NSView, ObservableObject {
     override func scrollWheel(with event: NSEvent) {
         var x = event.scrollingDeltaX
         var y = event.scrollingDeltaY
+        let mouseCaptured = surfaceController?.mouseCaptured ?? false
 
-        // Mouse wheels reporting precise deltas (phase/momentumPhase both empty)
-        // send a fixed pixel value per tick that may not match cell_height,
-        // causing fractional-line scrolling. Normalize to cell_height for 1 line/tick.
-        // Trackpad gestures (phase != []) and momentum pass raw for smooth scrolling.
-        if event.hasPreciseScrollingDeltas,
-           event.phase == [],
-           event.momentumPhase == [] {
-            let ch = cachedCellSize.height
-            if ch > 0 {
-                if y != 0 { y = copysign(ch, y) }
-                if x != 0 { x = copysign(cachedCellSize.width, x) }
-            }
+        // Some macOS wheel devices emit accelerated fractional deltas without
+        // setting precise scrolling. When a terminal app captures the mouse,
+        // Ghostty treats those as discrete wheel ticks, so clamp them to
+        // single-step deltas to avoid runaway scroll amplification.
+        let normalizeCapturedDiscreteWheel =
+            mouseCaptured &&
+            !event.hasPreciseScrollingDeltas &&
+            event.phase == [] &&
+            event.momentumPhase == []
+
+        if event.hasPreciseScrollingDeltas {
+            // Match Ghostty's AppKit scroll handling so precision devices
+            // don't feel sluggish in mouse-reporting terminal apps such as Neovim.
+            x *= 2
+            y *= 2
+        } else if normalizeCapturedDiscreteWheel {
+            if x != 0 { x = copysign(1, x) }
+            if y != 0 { y = copysign(1, y) }
         }
 
         let mods = EventTranslator.translateScrollMods(event)

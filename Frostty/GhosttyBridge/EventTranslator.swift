@@ -112,13 +112,22 @@ enum EventTranslator {
     }
 
     static func translateMomentumPhase(_ phase: NSEvent.Phase) -> ghostty_input_mouse_momentum_e {
-        if phase.contains(.began) { return GHOSTTY_MOUSE_MOMENTUM_BEGAN }
-        if phase.contains(.stationary) { return GHOSTTY_MOUSE_MOMENTUM_STATIONARY }
-        if phase.contains(.changed) { return GHOSTTY_MOUSE_MOMENTUM_CHANGED }
-        if phase.contains(.ended) { return GHOSTTY_MOUSE_MOMENTUM_ENDED }
-        if phase.contains(.cancelled) { return GHOSTTY_MOUSE_MOMENTUM_CANCELLED }
-        if phase.contains(.mayBegin) { return GHOSTTY_MOUSE_MOMENTUM_MAY_BEGIN }
-        return GHOSTTY_MOUSE_MOMENTUM_NONE
+        switch phase {
+        case .began:
+            return GHOSTTY_MOUSE_MOMENTUM_BEGAN
+        case .stationary:
+            return GHOSTTY_MOUSE_MOMENTUM_STATIONARY
+        case .changed:
+            return GHOSTTY_MOUSE_MOMENTUM_CHANGED
+        case .ended:
+            return GHOSTTY_MOUSE_MOMENTUM_ENDED
+        case .cancelled:
+            return GHOSTTY_MOUSE_MOMENTUM_CANCELLED
+        case .mayBegin:
+            return GHOSTTY_MOUSE_MOMENTUM_MAY_BEGIN
+        default:
+            return GHOSTTY_MOUSE_MOMENTUM_NONE
+        }
     }
 
     // MARK: - Text Helpers
