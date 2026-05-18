@@ -13,6 +13,18 @@ private class FlippedView: NSView {
     override var isFlipped: Bool { true }
 }
 
+/// NSScrollView subclass that pins `scrollerStyle` to `.overlay`. AppKit otherwise
+/// auto-syncs `scrollerStyle` to the system-wide `NSScroller.preferredScrollerStyle`
+/// (which becomes `.legacy` when a mouse is attached, or when WKWebView triggers
+/// a re-evaluation)
+@MainActor
+private final class OverlayScrollView: NSScrollView {
+    override var scrollerStyle: NSScroller.Style {
+        get { .overlay }
+        set { super.scrollerStyle = .overlay }
+    }
+}
+
 enum PaneDropZone: Equatable {
     case top
     case bottom
@@ -86,7 +98,7 @@ class SurfaceScrollView: NSView {
 
     // MARK: - Instance Properties
 
-    private let scrollView = NSScrollView()
+    private let scrollView = OverlayScrollView()
     private let documentContentView = FlippedView() // documentView
     private let paneDropOverlayView = PaneDropOverlayView()
     private let paneHandleHostingView = PaneHandleHostingView(rootView: AnyView(EmptyView()))
@@ -245,12 +257,6 @@ class SurfaceScrollView: NSView {
             selector: #selector(scrollViewDidEndLiveScroll(_:)),
             name: NSScrollView.didEndLiveScrollNotification,
             object: scrollView
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handlePreferredScrollerStyleChange(_:)),
-            name: NSScroller.preferredScrollerStyleDidChangeNotification,
-            object: nil
         )
 
         // Apply scrollbar config
@@ -477,11 +483,6 @@ class SurfaceScrollView: NSView {
     }
 
     // MARK: - Live Scroll (UI -> Core)
-
-    @objc private func handlePreferredScrollerStyleChange(_ notification: Notification) {
-        scrollView.scrollerStyle = .overlay
-        synchronizeLayout()
-    }
 
     @objc private func scrollViewContentBoundsDidChange(_ notification: Notification) {
         synchronizeSurfaceView()

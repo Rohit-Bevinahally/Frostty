@@ -31,6 +31,22 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         activeTab?.registry
     }
 
+    var preferredUIFontSurface: ghostty_surface_t? {
+        if let surface = preferredUIFontSurface(in: activeTab) {
+            return surface
+        }
+
+        for workspace in windowSession.workspaces {
+            for tab in workspace.tabs {
+                if let surface = preferredUIFontSurface(in: tab) {
+                    return surface
+                }
+            }
+        }
+
+        return nil
+    }
+
     var activeBrowserControllerForExternal: BrowserTabController? {
         guard let tab = activeTab else { return nil }
 
@@ -42,6 +58,23 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         for paneID in tab.splitTree.allLeafIDs() {
             if let controller = tab.registry.browserController(for: paneID) {
                 return controller
+            }
+        }
+
+        return nil
+    }
+
+    private func preferredUIFontSurface(in tab: Tab?) -> ghostty_surface_t? {
+        guard let tab else { return nil }
+
+        if let focusedID = tab.splitTree.focusedLeafID,
+           let surface = tab.registry.controller(for: focusedID)?.surface {
+            return surface
+        }
+
+        for paneID in tab.splitTree.allLeafIDs() {
+            if let surface = tab.registry.controller(for: paneID)?.surface {
+                return surface
             }
         }
 
@@ -67,6 +100,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         let sourceTabWasActive: Bool
         let sourceTabRemoved: Bool
         let newTabTitle: String
+        let newTabUsesCustomTitle: Bool
         let newTabPWD: String?
     }
 
@@ -335,14 +369,16 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             },
             onRenameTab: { [weak self] tabID, name in self?.renameTab(id: tabID, name: name) },
             onWorkspaceSelected: { [weak self] wsID in self?.switchToWorkspace(id: wsID) },
-            onNewWorkspace: { [weak self] name, wd in self?.createNewWorkspace(name: name, workingDirectory: wd) },
+            onNewWorkspace: { [weak self] name, wd in
+                self?.createNewWorkspace(name: name, workingDirectory: wd) ?? false
+            },
             onDeleteWorkspace: { [weak self] wsID in self?.deleteWorkspaceWithConfirmation(id: wsID) },
             onRenameWorkspace: { [weak self] wsID, name in self?.renameWorkspace(id: wsID, name: name) },
             onMoveWorkspace: { [weak self] fromIndex, toIndex in
                 self?.moveWorkspace(fromIndex: fromIndex, toIndex: toIndex)
             },
             onSetWorkingDirectory: { [weak self] wsID, path in
-                self?.setWorkingDirectory(for: wsID, path: path)
+                self?.setWorkingDirectory(for: wsID, path: path) ?? false
             },
             onPaneMoveToNewTabAtSlot: { [weak self] paneID, slot in
                 self?.movePaneToNewTab(sourceID: paneID, insertionSlot: slot)
@@ -352,6 +388,9 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             },
             onPaneMoveToWorkspace: { [weak self] paneID, workspaceID in
                 self?.movePaneToWorkspace(sourceID: paneID, workspaceID: workspaceID)
+            },
+            canDropPaneToNewTab: { [weak self] paneID in
+                self?.canMovePaneToNewTab(sourceID: paneID) ?? false
             },
             onToggleSidebar: { [weak self] in self?.toggleSidebar() },
             onSidebarWidthChanged: { [weak self] width in
@@ -854,18 +893,30 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         createNewWorkspace(name: "Workspace \(n)", workingDirectory: nil)
     }
 
-    func createNewWorkspace(name: String, workingDirectory: String?) {
+    @discardableResult
+    func createNewWorkspace(name: String, workingDirectory: String?) -> Bool {
         guard let app = GhosttyAppController.shared.app,
-              let window = self.window else { return }
+              let window = self.window else { return false }
+
+        let sanitizedWorkingDirectory: String?
+        do {
+            sanitizedWorkingDirectory = try WorkingDirectoryValidator.sanitize(workingDirectory)
+        } catch let error as WorkingDirectoryValidationError {
+            presentInvalidWorkingDirectoryAlert(error, for: window)
+            return false
+        } catch {
+            presentInvalidWorkingDirectoryAlert(WorkingDirectoryValidator.validationError(for: workingDirectory), for: window)
+            return false
+        }
 
         let tab = Tab()
 
         var config = GhosttyFFI.surfaceConfigNew()
         config.scale_factor = Double(window.backingScaleFactor)
 
-        guard let surfaceID = tab.registry.createSurface(app: app, config: config, pwd: workingDirectory) else {
+        guard let surfaceID = tab.registry.createSurface(app: app, config: config, pwd: sanitizedWorkingDirectory) else {
             logger.error("Failed to create surface for new workspace")
-            return
+            return false
         }
 
         tab.splitTree = SplitTree(leafID: surfaceID)
@@ -874,7 +925,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
         let workspace = Workspace(
             name: name,
-            workingDirectory: workingDirectory,
+            workingDirectory: sanitizedWorkingDirectory,
             tabs: [tab],
             activeTabID: tab.id
         )
@@ -886,6 +937,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         updateLayout()
         refreshHostingView()
         restoreFocus()
+        return true
     }
 
     private func closeActiveWorkspace() {
@@ -973,10 +1025,38 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         refreshHostingView()
     }
 
-    private func setWorkingDirectory(for wsID: UUID, path: String?) {
-        guard let workspace = windowSession.workspaces.first(where: { $0.id == wsID }) else { return }
-        workspace.workingDirectory = path
+    @discardableResult
+    private func setWorkingDirectory(for wsID: UUID, path: String?) -> Bool {
+        guard let workspace = windowSession.workspaces.first(where: { $0.id == wsID }) else { return false }
+
+        let sanitizedPath: String?
+        do {
+            sanitizedPath = try WorkingDirectoryValidator.sanitize(path)
+        } catch let error as WorkingDirectoryValidationError {
+            presentInvalidWorkingDirectoryAlert(error)
+            return false
+        } catch {
+            presentInvalidWorkingDirectoryAlert(WorkingDirectoryValidator.validationError(for: path))
+            return false
+        }
+
+        workspace.workingDirectory = sanitizedPath
         refreshHostingView()
+        return true
+    }
+
+    private func presentInvalidWorkingDirectoryAlert(_ error: WorkingDirectoryValidationError, for window: NSWindow? = nil) {
+        let alert = NSAlert()
+        alert.messageText = "Invalid Working Directory"
+        alert.informativeText = error.alertDescription
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+
+        if let window = window ?? self.window {
+            alert.beginSheetModal(for: window) { _ in }
+        } else {
+            alert.runModal()
+        }
     }
 
     private func renameTab(id tabID: UUID, name: String) {
@@ -1255,6 +1335,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func movePaneToNewTab(sourceID: UUID, insertionSlot: Int) {
+        guard canMovePaneToNewTab(sourceID: sourceID) else { return }
         guard let move = detachPaneForMove(sourceID) else { return }
         let newTab = makeDetachedPaneTab(from: move)
 
@@ -1332,6 +1413,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             sourceTab.isPaneMaximized = false
         }
 
+        let preserveCustomTitle = sourceTabRemoved && sourceTab.usesCustomTitle && !sourceTab.title.isEmpty
+
         return DetachedPaneMove(
             paneID: sourceID,
             entry: entry,
@@ -1340,23 +1423,36 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             sourceTabWasActive: sourceTabWasActive,
             sourceTabRemoved: sourceTabRemoved,
             newTabTitle: {
+                if preserveCustomTitle {
+                    return sourceTab.title
+                }
                 if let title = entry.title, !title.isEmpty {
                     return title
                 }
                 return sourceTab.title
             }(),
+            newTabUsesCustomTitle: preserveCustomTitle,
             newTabPWD: entry.pwd ?? sourceTab.pwd
         )
     }
 
     private func makeDetachedPaneTab(from move: DetachedPaneMove) -> Tab {
-        let newTab = Tab(title: move.newTabTitle, pwd: move.newTabPWD)
+        let newTab = Tab(
+            title: move.newTabTitle,
+            pwd: move.newTabPWD,
+            usesCustomTitle: move.newTabUsesCustomTitle
+        )
         newTab.registry.attachDetachedPane(move.entry, id: move.paneID)
         newTab.splitTree = SplitTree(leafID: move.paneID)
         if let controller = newTab.registry.browserController(for: move.paneID) {
             wireBrowserCallbacks(controller: controller, paneID: move.paneID, tab: newTab)
         }
         return newTab
+    }
+
+    private func canMovePaneToNewTab(sourceID: UUID) -> Bool {
+        guard let (sourceTab, _) = findTabContainingPane(id: sourceID) else { return false }
+        return sourceTab.splitTree.allLeafIDs().count > 1
     }
 
     private func finalizeSourceWorkspaceAfterPaneMove(_ move: DetachedPaneMove, destinationWorkspaceID: UUID) {
@@ -1645,6 +1741,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     @objc private func handleConfigChangeNotification(_ notification: Notification) {
         updateWindowBackgroundAppearance()
+        refreshHostingView()
     }
 
     @objc private func handleWillBeginEditing(_ notification: Notification) {

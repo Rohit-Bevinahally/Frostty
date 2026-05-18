@@ -97,7 +97,7 @@ struct TerminalPaneGrabHandleView: View {
                     .allowsHitTesting(false)
 
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(GhosttyUIFonts.font(size: 24, weight: .semibold))
                     .foregroundColor(TokyoNight.activeTabForegroundColor)
                     .allowsHitTesting(false)
                     .transition(.opacity)
@@ -145,7 +145,7 @@ struct BrowserPaneGrabHandleView: View {
                     .allowsHitTesting(false)
 
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(GhosttyUIFonts.font(size: 24, weight: .semibold))
                     .foregroundColor(TokyoNight.activeTabForegroundColor)
                     .allowsHitTesting(false)
                     .transition(.opacity)

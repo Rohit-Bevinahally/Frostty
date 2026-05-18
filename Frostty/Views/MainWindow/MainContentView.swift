@@ -17,20 +17,22 @@ struct MainContentView: View {
     var onRenameTab: ((UUID, String) -> Void)?
 
     var onWorkspaceSelected: ((UUID) -> Void)?
-    var onNewWorkspace: ((String, String?) -> Void)?
+    var onNewWorkspace: ((String, String?) -> Bool)?
     var onDeleteWorkspace: ((UUID) -> Void)?
     var onRenameWorkspace: ((UUID, String) -> Void)?
     var onMoveWorkspace: ((Int, Int) -> Void)?
-    var onSetWorkingDirectory: ((UUID, String?) -> Void)?
+    var onSetWorkingDirectory: ((UUID, String?) -> Bool)?
     var onPaneMoveToNewTabAtSlot: ((UUID, Int) -> Void)?
     var onPaneMoveToNewWorkspaceAtSlot: ((UUID, Int) -> Void)?
     var onPaneMoveToWorkspace: ((UUID, UUID) -> Void)?
+    var canDropPaneToNewTab: ((UUID) -> Bool)?
 
     var onToggleSidebar: (() -> Void)?
     var onSidebarWidthChanged: ((CGFloat) -> Void)?
 
     @State private var paneTabDropGlobalX: CGFloat?
     @State private var paneTabDropInsertionSlot: Int?
+    @State private var liveSidebarWidth: CGFloat?
 
     var body: some View {
         GeometryReader { geo in
@@ -38,13 +40,14 @@ struct MainContentView: View {
             let activeTabs = activeWorkspace?.tabs ?? []
             let activeTabID = activeWorkspace?.activeTabID
             let tabDropTopInset = windowSession.showSidebar ? geo.safeAreaInsets.top : 0
+            let sidebarWidth = liveSidebarWidth ?? windowSession.sidebarWidth
 
             HStack(spacing: 0) {
                 if windowSession.showSidebar {
                     SidebarView(
                         workspaces: windowSession.workspaces,
                         activeWorkspaceID: windowSession.activeWorkspaceID,
-                        currentWidth: windowSession.sidebarWidth,
+                        currentWidth: sidebarWidth,
                         onSelectWorkspace: onWorkspaceSelected,
                         onAddWorkspace: onNewWorkspace,
                         onDeleteWorkspace: onDeleteWorkspace,
@@ -53,15 +56,16 @@ struct MainContentView: View {
                         onSetWorkingDirectory: onSetWorkingDirectory,
                         onPaneMoveToNewWorkspaceAtSlot: onPaneMoveToNewWorkspaceAtSlot,
                         onPaneMoveToWorkspace: onPaneMoveToWorkspace,
-                        onSidebarWidthChanged: { newWidth in
-                            let clamped = max(
-                                WindowSession.minSidebarWidth,
-                                min(WindowSession.maxSidebarWidth, newWidth)
-                            )
+                        onSidebarWidthChanging: { newWidth in
+                            liveSidebarWidth = clampedSidebarWidth(newWidth)
+                        },
+                        onSidebarWidthChangeEnded: { newWidth in
+                            let clamped = clampedSidebarWidth(newWidth)
                             onSidebarWidthChanged?(clamped)
+                            liveSidebarWidth = nil
                         }
                     )
-                    .frame(width: windowSession.sidebarWidth)
+                    .frame(width: sidebarWidth)
                     .transition(.move(edge: .leading))
                 }
 
@@ -82,14 +86,20 @@ struct MainContentView: View {
                             GeometryReader { dropGeo in
                                 PaneDragDropTargetRepresentable(
                                     globalFrame: dropGeo.frame(in: .global),
-                                    onDragUpdated: { point in
+                                    onDragUpdated: { paneID, point in
+                                        guard canDropPaneToNewTab?(paneID) ?? true else {
+                                            clearPaneTabDropState()
+                                            return false
+                                        }
                                         paneTabDropGlobalX = point.x
+                                        return true
                                     },
                                     onDragExited: clearPaneTabDropState,
                                     onDrop: { paneID, _ in
                                         let slot = paneTabDropInsertionSlot
                                         clearPaneTabDropState()
-                                        guard let slot else { return false }
+                                        guard canDropPaneToNewTab?(paneID) ?? true,
+                                              let slot else { return false }
                                         onPaneMoveToNewTabAtSlot?(paneID, slot)
                                         return true
                                     }
@@ -124,6 +134,11 @@ struct MainContentView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: windowSession.showSidebar)
         .animation(.easeInOut(duration: 0.15), value: isPaneResizeMode)
+        .font(GhosttyUIFonts.font(textStyle: .body))
+    }
+
+    private func clampedSidebarWidth(_ width: CGFloat) -> CGFloat {
+        max(WindowSession.minSidebarWidth, min(WindowSession.maxSidebarWidth, width))
     }
 
     private func clearPaneTabDropState() {
@@ -135,7 +150,7 @@ struct MainContentView: View {
 private struct ResizeModeToast: View {
     var body: some View {
         Text("Resize Mode")
-            .font(.system(size: 13, weight: .semibold))
+            .font(GhosttyUIFonts.font(size: 13, weight: .semibold))
             .foregroundStyle(.white)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -192,7 +207,7 @@ struct TerminalContainerRepresentable: NSViewRepresentable {
 
 struct PaneDragDropTargetRepresentable: NSViewRepresentable {
     let globalFrame: CGRect
-    let onDragUpdated: (CGPoint) -> Void
+    let onDragUpdated: (UUID, CGPoint) -> Bool
     let onDragExited: () -> Void
     let onDrop: (UUID, CGPoint) -> Bool
 
@@ -214,7 +229,7 @@ struct PaneDragDropTargetRepresentable: NSViewRepresentable {
 @MainActor
 final class PaneDragDropTargetView: NSView {
     var globalFrame: CGRect = .zero
-    var onDragUpdated: ((CGPoint) -> Void)?
+    var onDragUpdated: ((UUID, CGPoint) -> Bool)?
     var onDragExited: (() -> Void)?
     var onDrop: ((UUID, CGPoint) -> Bool)?
 
@@ -225,14 +240,22 @@ final class PaneDragDropTargetView: NSView {
     }
 
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        guard draggedPaneID(from: sender.draggingPasteboard) != nil else { return [] }
-        onDragUpdated?(globalLocation(from: sender))
+        guard let paneID = draggedPaneID(from: sender.draggingPasteboard) else { return [] }
+        let accepted = onDragUpdated?(paneID, globalLocation(from: sender)) ?? true
+        guard accepted else {
+            onDragExited?()
+            return []
+        }
         return .move
     }
 
     override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
-        guard draggedPaneID(from: sender.draggingPasteboard) != nil else { return [] }
-        onDragUpdated?(globalLocation(from: sender))
+        guard let paneID = draggedPaneID(from: sender.draggingPasteboard) else { return [] }
+        let accepted = onDragUpdated?(paneID, globalLocation(from: sender)) ?? true
+        guard accepted else {
+            onDragExited?()
+            return []
+        }
         return .move
     }
 

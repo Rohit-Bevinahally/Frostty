@@ -6,6 +6,50 @@
 import AppKit
 import SwiftUI
 
+struct WorkingDirectoryValidationError: Error, Equatable, LocalizedError, Sendable {
+    let invalidPath: String
+
+    var errorDescription: String? {
+        "\"\(invalidPath)\" is not a valid directory."
+    }
+
+    var recoverySuggestion: String? {
+        "Enter an existing directory path, or leave the field blank to use the default working directory."
+    }
+
+    var alertDescription: String {
+        "\(errorDescription ?? "Invalid working directory.") \(recoverySuggestion ?? "")"
+    }
+}
+
+enum WorkingDirectoryValidator {
+    static func sanitize(_ rawPath: String?) throws -> String? {
+        guard let rawPath else { return nil }
+
+        let trimmed = rawPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let normalized = normalizedPath(for: trimmed)
+
+        var isDirectory = ObjCBool(false)
+        guard FileManager.default.fileExists(atPath: normalized, isDirectory: &isDirectory), isDirectory.boolValue else {
+            throw WorkingDirectoryValidationError(invalidPath: normalized)
+        }
+
+        return normalized
+    }
+
+    static func validationError(for rawPath: String?) -> WorkingDirectoryValidationError {
+        WorkingDirectoryValidationError(invalidPath: normalizedPath(for: rawPath ?? ""))
+    }
+
+    private static func normalizedPath(for rawPath: String) -> String {
+        let trimmed = rawPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let expanded = (trimmed as NSString).expandingTildeInPath
+        return (expanded as NSString).standardizingPath
+    }
+}
+
 struct WorkingDirectoryField: View {
     @Binding var path: String
     var placeholder: String = "~/path/to/directory"
@@ -14,7 +58,7 @@ struct WorkingDirectoryField: View {
         HStack(spacing: 6) {
             TextField(placeholder, text: $path)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13, design: .monospaced))
+                .font(GhosttyUIFonts.font(size: 13, fallbackDesign: .monospaced))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
                 .background(
@@ -28,7 +72,7 @@ struct WorkingDirectoryField: View {
 
             Button(action: browseForDirectory) {
                 Image(systemName: "folder")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(GhosttyUIFonts.font(size: 13, weight: .medium))
                     .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
                     .frame(width: 28, height: 28)
                     .background(

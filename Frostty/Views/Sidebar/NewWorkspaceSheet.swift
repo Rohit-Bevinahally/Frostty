@@ -8,26 +8,27 @@ import SwiftUI
 struct NewWorkspaceSheet: View {
     @Binding var isPresented: Bool
     var defaultName: String
-    var onCreate: (String, String?) -> Void
+    var onCreate: (String, String?) -> Bool
 
     @State private var name: String = ""
     @State private var workingDirectory: String = ""
+    @State private var validationError: WorkingDirectoryValidationError?
     @FocusState private var nameFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("New Workspace")
-                .font(.headline)
+                .font(GhosttyUIFonts.font(textStyle: .headline))
                 .foregroundStyle(TokyoNight.activeWorkspaceForegroundColor)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Name")
-                    .font(.subheadline)
+                    .font(GhosttyUIFonts.font(textStyle: .subheadline))
                     .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
                 TextField("Workspace name", text: $name)
                     .textFieldStyle(.plain)
                     .focused($nameFocused)
-                    .font(.system(size: 13))
+                    .font(GhosttyUIFonts.font(size: 13))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 6)
                     .background(
@@ -42,7 +43,7 @@ struct NewWorkspaceSheet: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Working directory (optional)")
-                    .font(.subheadline)
+                    .font(GhosttyUIFonts.font(textStyle: .subheadline))
                     .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
                 WorkingDirectoryField(path: $workingDirectory)
             }
@@ -56,10 +57,7 @@ struct NewWorkspaceSheet: View {
                 .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
 
                 Button("Create") {
-                    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let wd = workingDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
-                    onCreate(trimmedName, wd.isEmpty ? nil : wd)
-                    isPresented = false
+                    submit()
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -69,12 +67,42 @@ struct NewWorkspaceSheet: View {
         .padding(20)
         .frame(minWidth: 360)
         .background(TokyoNight.barBackgroundColor)
+        .font(GhosttyUIFonts.font(textStyle: .body))
+        .alert(
+            "Invalid Working Directory",
+            isPresented: Binding(
+                get: { validationError != nil },
+                set: { if !$0 { validationError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                validationError = nil
+            }
+        } message: {
+            Text(validationError?.alertDescription ?? "")
+        }
         .onAppear {
             name = defaultName
             workingDirectory = ""
             DispatchQueue.main.async {
                 nameFocused = true
             }
+        }
+    }
+
+    private func submit() {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        do {
+            let sanitizedWorkingDirectory = try WorkingDirectoryValidator.sanitize(workingDirectory)
+            if onCreate(trimmedName, sanitizedWorkingDirectory) {
+                isPresented = false
+            }
+        } catch let error as WorkingDirectoryValidationError {
+            validationError = error
+        } catch {
+            validationError = WorkingDirectoryValidator.validationError(for: workingDirectory)
         }
     }
 }

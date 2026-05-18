@@ -2,11 +2,12 @@
 // Frostty
 //
 // Wraps ghostty_config_t lifecycle and provides configuration access.
-// Simplified from Calyx — no glass presets, no managed config blocks.
 
 @preconcurrency import AppKit
+import CoreText
 import GhosttyKit
 import os
+import SwiftUI
 
 private let logger = Logger(subsystem: "com.frostty.terminal", category: "GhosttyConfig")
 
@@ -111,6 +112,15 @@ final class GhosttyConfigManager {
         return String(cString: ptr)
     }
 
+    private func nonEmptyString(_ key: String) -> String? {
+        guard let value = getString(key)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+        return value
+    }
+
     func getDouble(_ key: String, default defaultValue: Double = 0) -> Double {
         guard let cfg = config else { return defaultValue }
         var value = defaultValue
@@ -158,6 +168,14 @@ final class GhosttyConfigManager {
         )
     }
 
+    var primaryFontFamily: String? {
+        nonEmptyString("font-family")
+    }
+
+    var windowTitleFontFamily: String? {
+        nonEmptyString("window-title-font-family")
+    }
+
     // MARK: - Scrollbar
 
     enum ScrollbarMode: String {
@@ -168,5 +186,115 @@ final class GhosttyConfigManager {
     var scrollbarMode: ScrollbarMode {
         guard let str = getString("scrollbar") else { return .system }
         return ScrollbarMode(rawValue: str) ?? .system
+    }
+}
+
+@MainActor
+enum GhosttyUIFonts {
+    static func font(textStyle: NSFont.TextStyle) -> Font {
+        Font(nsFont(textStyle: textStyle))
+    }
+
+    static func font(
+        size: CGFloat,
+        weight: NSFont.Weight = .regular,
+        fallbackDesign: NSFontDescriptor.SystemDesign = .default
+    ) -> Font {
+        Font(nsFont(size: size, weight: weight, fallbackDesign: fallbackDesign))
+    }
+
+    static func nsFont(textStyle: NSFont.TextStyle) -> NSFont {
+        let preferred = NSFont.preferredFont(forTextStyle: textStyle, options: [:])
+        return nsFont(size: preferred.pointSize, weight: preferred.frosttyWeight)
+    }
+
+    static func nsFont(
+        size: CGFloat,
+        weight: NSFont.Weight = .regular,
+        fallbackDesign: NSFontDescriptor.SystemDesign = .default
+    ) -> NSFont {
+        if let family = preferredFamilyName(),
+           let configuredFont = configuredFont(family: family, size: size, weight: weight) {
+            return configuredFont
+        }
+
+        return fallbackSystemFont(size: size, weight: weight, design: fallbackDesign)
+    }
+
+    private static func preferredFamilyName() -> String? {
+        let config = GhosttyAppController.shared.configManager
+        if let family = config.windowTitleFontFamily {
+            return family
+        }
+        if let family = activeSurfaceFontFamily() {
+            return family
+        }
+        return config.primaryFontFamily
+    }
+
+    private static func activeSurfaceFontFamily() -> String? {
+        for controller in candidateWindowControllers() {
+            guard let surface = controller.preferredUIFontSurface,
+                  let fontRaw = GhosttyFFI.surfaceQuicklookFont(surface) else {
+                continue
+            }
+
+            let font = Unmanaged<CTFont>.fromOpaque(fontRaw).takeRetainedValue()
+            let family = (CTFontCopyFamilyName(font) as String).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !family.isEmpty {
+                return family
+            }
+        }
+
+        return nil
+    }
+
+    private static func candidateWindowControllers() -> [FrosttyWindowController] {
+        var controllers: [FrosttyWindowController] = []
+
+        if let keyController = NSApp.keyWindow?.windowController as? FrosttyWindowController {
+            controllers.append(keyController)
+        }
+
+        for window in NSApp.windows {
+            guard let controller = window.windowController as? FrosttyWindowController else { continue }
+            guard !controllers.contains(where: { $0 === controller }) else { continue }
+            controllers.append(controller)
+        }
+
+        return controllers
+    }
+
+    private static func configuredFont(family: String, size: CGFloat, weight: NSFont.Weight) -> NSFont? {
+        let descriptor = NSFontDescriptor(
+            fontAttributes: [
+                .family: family,
+                .traits: [NSFontDescriptor.TraitKey.weight: weight.rawValue],
+            ]
+        )
+        return NSFont(descriptor: descriptor, size: size)
+    }
+
+    private static func fallbackSystemFont(
+        size: CGFloat,
+        weight: NSFont.Weight,
+        design: NSFontDescriptor.SystemDesign
+    ) -> NSFont {
+        let base = NSFont.systemFont(ofSize: size, weight: weight)
+        guard design != .default,
+              let descriptor = base.fontDescriptor.withDesign(design),
+              let designedFont = NSFont(descriptor: descriptor, size: size) else {
+            return base
+        }
+
+        return designedFont
+    }
+}
+
+private extension NSFont {
+    var frosttyWeight: NSFont.Weight {
+        let traits = fontDescriptor.object(forKey: .traits) as? [NSFontDescriptor.TraitKey: Any]
+        let rawValue = traits?[.weight] as? CGFloat ?? 0
+        return NSFont.Weight(rawValue: rawValue)
     }
 }

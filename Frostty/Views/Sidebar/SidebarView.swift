@@ -18,6 +18,10 @@ private struct WorkspaceFramePreferenceKey: PreferenceKey {
     }
 }
 
+private final class WorkspaceFrameCache {
+    var frames: [UUID: CGRect] = [:]
+}
+
 private func insertionSlotForVerticalDrag(dragMidY: CGFloat, workspaces: [Workspace], frames: [UUID: CGRect]) -> Int {
     let orderedMids = workspaces.compactMap { w -> CGFloat? in frames[w.id].map(\.midY) }
     var slot = 0
@@ -49,10 +53,11 @@ private struct WorkingDirectoryEditorPayload: Identifiable {
 private struct EditWorkingDirectorySheet: View {
     let workspaceID: UUID
     @State private var path: String
-    let onSave: (UUID, String?) -> Void
+    @State private var validationError: WorkingDirectoryValidationError?
+    let onSave: (UUID, String?) -> Bool
     let onDismiss: () -> Void
 
-    init(workspaceID: UUID, initialPath: String, onSave: @escaping (UUID, String?) -> Void, onDismiss: @escaping () -> Void) {
+    init(workspaceID: UUID, initialPath: String, onSave: @escaping (UUID, String?) -> Bool, onDismiss: @escaping () -> Void) {
         self.workspaceID = workspaceID
         _path = State(initialValue: initialPath)
         self.onSave = onSave
@@ -62,7 +67,7 @@ private struct EditWorkingDirectorySheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Working directory")
-                .font(.headline)
+                .font(GhosttyUIFonts.font(textStyle: .headline))
                 .foregroundStyle(TokyoNight.activeWorkspaceForegroundColor)
 
             WorkingDirectoryField(path: $path)
@@ -73,9 +78,7 @@ private struct EditWorkingDirectorySheet: View {
                     .keyboardShortcut(.cancelAction)
                     .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
                 Button("Save") {
-                    let t = path.trimmingCharacters(in: .whitespacesAndNewlines)
-                    onSave(workspaceID, t.isEmpty ? nil : t)
-                    onDismiss()
+                    submit()
                 }
                 .keyboardShortcut(.defaultAction)
                 .tint(TokyoNight.activeTabBackgroundColor)
@@ -84,6 +87,33 @@ private struct EditWorkingDirectorySheet: View {
         .padding(20)
         .frame(minWidth: 360)
         .background(TokyoNight.barBackgroundColor)
+        .font(GhosttyUIFonts.font(textStyle: .body))
+        .alert(
+            "Invalid Working Directory",
+            isPresented: Binding(
+                get: { validationError != nil },
+                set: { if !$0 { validationError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                validationError = nil
+            }
+        } message: {
+            Text(validationError?.alertDescription ?? "")
+        }
+    }
+
+    private func submit() {
+        do {
+            let sanitizedPath = try WorkingDirectoryValidator.sanitize(path)
+            if onSave(workspaceID, sanitizedPath) {
+                onDismiss()
+            }
+        } catch let error as WorkingDirectoryValidationError {
+            validationError = error
+        } catch {
+            validationError = WorkingDirectoryValidator.validationError(for: path)
+        }
     }
 }
 
@@ -95,19 +125,20 @@ struct SidebarView: View {
     let currentWidth: CGFloat
 
     var onSelectWorkspace: ((UUID) -> Void)?
-    var onAddWorkspace: ((String, String?) -> Void)?
+    var onAddWorkspace: ((String, String?) -> Bool)?
     var onDeleteWorkspace: ((UUID) -> Void)?
     var onRenameWorkspace: ((UUID, String) -> Void)?
     var onMoveWorkspace: ((Int, Int) -> Void)?
-    var onSetWorkingDirectory: ((UUID, String?) -> Void)?
+    var onSetWorkingDirectory: ((UUID, String?) -> Bool)?
     var onPaneMoveToNewWorkspaceAtSlot: ((UUID, Int) -> Void)?
     var onPaneMoveToWorkspace: ((UUID, UUID) -> Void)?
-    var onSidebarWidthChanged: ((CGFloat) -> Void)?
+    var onSidebarWidthChanging: ((CGFloat) -> Void)?
+    var onSidebarWidthChangeEnded: ((CGFloat) -> Void)?
 
     @State private var draggedWorkspaceID: UUID?
     @State private var draggedFromIndex: Int?
     @State private var dragOffsetY: CGFloat = 0
-    @State private var workspaceFrames: [UUID: CGRect] = [:]
+    @State private var workspaceFrameCache = WorkspaceFrameCache()
     @State private var insertionSlot: Int?
 
     @State private var showNewWorkspaceSheet = false
@@ -171,18 +202,23 @@ struct SidebarView: View {
                 .padding(.bottom, 8)
                 .onPreferenceChange(WorkspaceFramePreferenceKey.self) { frames in
                     Task { @MainActor in
-                        workspaceFrames = frames
+                        workspaceFrameCache.frames = frames
+                        guard paneDropWorkspaceID != nil || paneDropInsertionSlot != nil else { return }
                         updatePaneDropState()
                     }
                 }
             }
         }
         .background(TokyoNight.barBackgroundColor)
+        .font(GhosttyUIFonts.font(textStyle: .body))
         .overlay {
             GeometryReader { geo in
                 PaneDragDropTargetRepresentable(
                     globalFrame: geo.frame(in: .global),
-                    onDragUpdated: updatePaneDropState(for:),
+                    onDragUpdated: { _, point in
+                        updatePaneDropState(for: point)
+                        return true
+                    },
                     onDragExited: clearPaneDropState,
                     onDrop: { paneID, _ in
                         let targetWorkspaceID = paneDropWorkspaceID
@@ -205,7 +241,8 @@ struct SidebarView: View {
         .overlay(alignment: .trailing) {
             SidebarResizeHandle(
                 currentWidth: currentWidth,
-                onWidthChanged: onSidebarWidthChanged
+                onWidthChanging: onSidebarWidthChanging,
+                onWidthChangeEnded: onSidebarWidthChangeEnded
             )
         }
         .sheet(isPresented: $showNewWorkspaceSheet) {
@@ -213,7 +250,7 @@ struct SidebarView: View {
                 isPresented: $showNewWorkspaceSheet,
                 defaultName: newWorkspaceDefaultName,
                 onCreate: { name, wd in
-                    onAddWorkspace?(name, wd)
+                    onAddWorkspace?(name, wd) ?? false
                 }
             )
         }
@@ -222,7 +259,7 @@ struct SidebarView: View {
                 workspaceID: payload.workspaceID,
                 initialPath: payload.draftPath,
                 onSave: { id, path in
-                    onSetWorkingDirectory?(id, path)
+                    onSetWorkingDirectory?(id, path) ?? false
                 },
                 onDismiss: { workingDirectoryEditor = nil }
             )
@@ -289,12 +326,12 @@ struct SidebarView: View {
                 }
                 guard draggedWorkspaceID == workspace.id else { return }
                 dragOffsetY = value.translation.height
-                let baseMidY = workspaceFrames[workspace.id]?.midY ?? 0
+                let baseMidY = workspaceFrameCache.frames[workspace.id]?.midY ?? 0
                 let dragMidY = baseMidY + value.translation.height
                 insertionSlot = insertionSlotForVerticalDrag(
                     dragMidY: dragMidY,
                     workspaces: workspaces,
-                    frames: workspaceFrames
+                    frames: workspaceFrameCache.frames
                 )
             }
             .onEnded { _ in
@@ -351,7 +388,7 @@ struct SidebarView: View {
 
     private func workspaceContainingPoint(at globalPoint: CGPoint) -> UUID? {
         for workspace in workspaces {
-            guard let frame = workspaceFrames[workspace.id] else { continue }
+            guard let frame = workspaceFrameCache.frames[workspace.id] else { continue }
             if frame.insetBy(dx: -4, dy: -2).contains(globalPoint) {
                 return workspace.id
             }
@@ -366,7 +403,7 @@ struct SidebarView: View {
     }
 
     private func workspaceInsertionSlot(for globalY: CGFloat) -> Int {
-        let orderedMids = workspaces.compactMap { workspaceFrames[$0.id]?.midY }
+        let orderedMids = workspaces.compactMap { workspaceFrameCache.frames[$0.id]?.midY }
         var slot = 0
         for midY in orderedMids where globalY > midY {
             slot += 1
@@ -386,7 +423,7 @@ private struct NewWorkspaceRowButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .font(GhosttyUIFonts.font(size: 16, weight: .medium, fallbackDesign: .monospaced))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
@@ -426,7 +463,7 @@ struct WorkspaceRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "folder")
-                .font(.system(size: 16, weight: .medium))
+                .font(GhosttyUIFonts.font(size: 16, weight: .medium))
                 .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
 
             if isEditing {
@@ -434,7 +471,7 @@ struct WorkspaceRowView: View {
                     commitRename()
                 })
                 .textFieldStyle(.plain)
-                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .font(GhosttyUIFonts.font(size: 16, weight: .medium, fallbackDesign: .monospaced))
                 .foregroundStyle(editingForeground)
                 .focused($isFieldFocused)
                 .onExitCommand {
@@ -448,7 +485,11 @@ struct WorkspaceRowView: View {
                 }
             } else {
                 Text(workspace.name)
-                    .font(.system(size: 16, weight: isActive ? .bold : .medium, design: .monospaced))
+                    .font(GhosttyUIFonts.font(
+                        size: 16,
+                        weight: .semibold,
+                        fallbackDesign: .monospaced
+                    ))
                     .lineLimit(1)
                     .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
             }
@@ -456,12 +497,8 @@ struct WorkspaceRowView: View {
             Spacer()
 
             Text("\(workspace.tabs.count)")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(
-                    isActive
-                        ? TokyoNight.activeWorkspaceForegroundColor.opacity(0.7)
-                        : TokyoNight.inactiveWorkspaceForegroundColor.opacity(0.6)
-                )
+                .font(GhosttyUIFonts.font(size: 13, weight: .bold, fallbackDesign: .rounded))
+                .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -528,7 +565,8 @@ struct WorkspaceRowView: View {
 
 struct SidebarResizeHandle: View {
     let currentWidth: CGFloat
-    var onWidthChanged: ((CGFloat) -> Void)?
+    var onWidthChanging: ((CGFloat) -> Void)?
+    var onWidthChangeEnded: ((CGFloat) -> Void)?
 
     @State private var isHovering = false
     @State private var dragStartWidth: CGFloat?
@@ -547,16 +585,21 @@ struct SidebarResizeHandle: View {
                 }
             }
             .gesture(
-                DragGesture(minimumDistance: 1)
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
                     .onChanged { value in
                         if dragStartWidth == nil {
                             dragStartWidth = currentWidth
                         }
                         let base = dragStartWidth ?? currentWidth
-                        let newWidth = base + value.translation.width
-                        onWidthChanged?(newWidth)
+                        let delta = value.location.x - value.startLocation.x
+                        let newWidth = base + delta
+                        onWidthChanging?(newWidth)
                     }
-                    .onEnded { _ in
+                    .onEnded { value in
+                        let base = dragStartWidth ?? currentWidth
+                        let delta = value.location.x - value.startLocation.x
+                        let newWidth = base + delta
+                        onWidthChangeEnded?(newWidth)
                         dragStartWidth = nil
                     }
             )

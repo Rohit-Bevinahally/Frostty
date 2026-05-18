@@ -22,6 +22,7 @@ struct BrowserContainerView: View {
         }
         .padding(.horizontal, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .font(GhosttyUIFonts.font(textStyle: .body))
         .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
             appearanceTick &+= 1
         }
@@ -60,7 +61,7 @@ private struct BrowserToolbarView: View {
 
             TextField("Search or enter address", text: $omnibarText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 14, design: .monospaced))
+                .font(GhosttyUIFonts.font(size: 14, fallbackDesign: .monospaced))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 8)
                 .padding(.top, 4)
@@ -132,7 +133,7 @@ private struct ErrorBannerView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.yellow)
             Text(message)
-                .font(.system(size: 12))
+                .font(GhosttyUIFonts.font(size: 12))
                 .lineLimit(2)
             Spacer()
         }
