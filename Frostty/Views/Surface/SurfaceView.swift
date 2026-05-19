@@ -307,9 +307,35 @@ class SurfaceView: NSView, ObservableObject {
         currentMouseCursor(for: shape).set()
     }
 
+    // MARK: - Ancestor lookup
+
+    /// Walks superviews to find the enclosing `SurfaceScrollView` host.
+    /// Used by the Escape handler to coordinate with the scrollback search
+    /// overlay (which lives on the scroll view, not on us).
+    fileprivate var enclosingSurfaceScrollView: SurfaceScrollView? {
+        var v: NSView? = self.superview
+        while let view = v {
+            if let scroll = view as? SurfaceScrollView { return scroll }
+            v = view.superview
+        }
+        return nil
+    }
+
     // MARK: - Keyboard Input
 
     override func keyDown(with event: NSEvent) {
+        // If the scrollback search overlay is visible and we get an Escape
+        // with no modifiers, dismiss the overlay instead of forwarding the
+        // event to the shell. This is the second step of the two-stage
+        // Esc behavior — the first Esc (while the search field had focus)
+        // already handed first-responder back to us.
+        if event.keyCode == 53,
+           event.modifierFlags.intersection([.shift, .control, .option, .command]).isEmpty,
+           let scrollView = enclosingSurfaceScrollView,
+           scrollView.dismissSearchBarIfVisible() {
+            return
+        }
+
         guard let surfaceController else {
             interpretKeyEvents([event])
             return

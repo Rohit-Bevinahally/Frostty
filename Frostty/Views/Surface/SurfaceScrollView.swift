@@ -586,6 +586,10 @@ class SurfaceScrollView: NSView {
         if searchBar == nil {
             let bar = SearchBarView(frame: .zero)
             bar.sender = surfaceView.surfaceController
+            bar.onEscapeToTerminal = { [weak self] in
+                guard let self else { return }
+                self.window?.makeFirstResponder(self.surfaceView)
+            }
             searchBar = bar
             addSubview(bar)
         }
@@ -603,6 +607,19 @@ class SurfaceScrollView: NSView {
         searchBar.focusSearchField()
     }
 
+    /// Dismiss the scrollback search bar (if visible) by sending `end_search`.
+    /// libghostty echoes the end-search action back, which triggers
+    /// `hideSearchBar()` via the `.ghosttyEndSearch` notification.
+    /// Returns `true` when the bar was present and an `end_search` action
+    /// was issued, allowing callers (e.g. `SurfaceView.keyDown`) to consume
+    /// the originating event.
+    @discardableResult
+    func dismissSearchBarIfVisible() -> Bool {
+        guard searchBar != nil else { return false }
+        surfaceView.surfaceController?.performAction("end_search")
+        return true
+    }
+
     private func hideSearchBar() {
         searchBar?.resetSearchState()
         searchBar?.setSearchText("")
@@ -612,16 +629,10 @@ class SurfaceScrollView: NSView {
     }
 
     private func layoutSearchBar() {
-        guard let searchBar else { return }
-        let barHeight: CGFloat = 36
-        let padding: CGFloat = 8
-        let barWidth = min(bounds.width - padding * 2, 500)
-        searchBar.frame = NSRect(
-            x: bounds.width - barWidth - padding,
-            y: padding,  // top in flipped coordinates (isFlipped = true)
-            width: barWidth,
-            height: barHeight
-        )
+        // The overlay positions and sizes its own search field internally
+        // (corner-snap, drag, etc.), so we let it span the full surface
+        // and rely on its hit test to pass through to the terminal.
+        searchBar?.frame = bounds
     }
 
     // MARK: - Pane Drag Destination

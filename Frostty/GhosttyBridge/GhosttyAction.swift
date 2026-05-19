@@ -115,6 +115,18 @@ enum GhosttyActionRouter {
         case GHOSTTY_ACTION_SECURE_INPUT:
             return handleSecureInput(app, target: target, mode: action.action.secure_input)
 
+        case GHOSTTY_ACTION_START_SEARCH:
+            return handleStartSearch(app, target: target, value: action.action.start_search)
+
+        case GHOSTTY_ACTION_END_SEARCH:
+            return handleEndSearch(app, target: target)
+
+        case GHOSTTY_ACTION_SEARCH_TOTAL:
+            return handleSearchTotal(app, target: target, value: action.action.search_total)
+
+        case GHOSTTY_ACTION_SEARCH_SELECTED:
+            return handleSearchSelected(app, target: target, value: action.action.search_selected)
+
         case GHOSTTY_ACTION_KEY_SEQUENCE,
              GHOSTTY_ACTION_PROGRESS_REPORT:
             return true
@@ -544,6 +556,68 @@ enum GhosttyActionRouter {
         default:
             return false
         }
+        return true
+    }
+
+    // MARK: - Search Handlers
+
+    private static func handleStartSearch(
+        _ app: ghostty_app_t,
+        target: ghostty_target_s,
+        value: ghostty_action_start_search_s
+    ) -> Bool {
+        guard let surfaceView = surfaceView(from: target) else { return false }
+        let needle: String
+        if let ptr = value.needle {
+            needle = String(validatingCString: ptr) ?? ""
+        } else {
+            needle = ""
+        }
+        NotificationCenter.default.post(
+            name: .ghosttyStartSearch,
+            object: surfaceView,
+            userInfo: ["needle": needle]
+        )
+        return true
+    }
+
+    private static func handleEndSearch(
+        _ app: ghostty_app_t,
+        target: ghostty_target_s
+    ) -> Bool {
+        guard let surfaceView = surfaceView(from: target) else { return false }
+        NotificationCenter.default.post(
+            name: .ghosttyEndSearch,
+            object: surfaceView
+        )
+        return true
+    }
+
+    private static func handleSearchTotal(
+        _ app: ghostty_app_t,
+        target: ghostty_target_s,
+        value: ghostty_action_search_total_s
+    ) -> Bool {
+        guard let surfaceView = surfaceView(from: target) else { return false }
+        NotificationCenter.default.post(
+            name: .ghosttySearchTotal,
+            object: surfaceView,
+            userInfo: ["total": Int(value.total)]
+        )
+        return true
+    }
+
+    private static func handleSearchSelected(
+        _ app: ghostty_app_t,
+        target: ghostty_target_s,
+        value: ghostty_action_search_selected_s
+    ) -> Bool {
+        guard let surfaceView = surfaceView(from: target) else { return false }
+        NotificationCenter.default.post(
+            name: .ghosttySearchSelected,
+            object: surfaceView,
+            userInfo: ["selected": Int(value.selected)]
+        )
         return true
     }
 
