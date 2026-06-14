@@ -346,13 +346,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
         tab.splitTree = SplitTree(leafID: surfaceID)
 
-        rebuildSplitContainer()
-        updateLayout()
-
-        DispatchQueue.main.async { [weak self] in
-            guard let self, let window = self.window, let tab = self.activeTab else { return }
-            _ = tab.registry.makeFirstResponder(for: surfaceID, in: window)
-        }
+        activateCurrentTab()
     }
 
     // MARK: - Content View Building
@@ -454,13 +448,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             return false
         }
 
-        let becameFirstResponder = tab.registry.makeFirstResponder(for: focusedID, in: window)
-        guard becameFirstResponder else { return false }
-
-        synchronizePaneFocus(in: tab, focusedID: focusedID)
-        markFocusedPane(in: tab, focusedID: focusedID)
-        tab.registry.paneView(for: focusedID)?.needsDisplay = true
-        return true
+        syncFocusToSurfaceTree(in: tab)
+        return tab.registry.makeFirstResponder(for: focusedID, in: window)
     }
 
     private func restoreFocus() {
@@ -496,31 +485,60 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             return
         }
 
-        let result = tab.registry.makeFirstResponder(for: focusedID, in: window)
-        if result {
-            synchronizePaneFocus(in: tab, focusedID: focusedID)
-            markFocusedPane(in: tab, focusedID: focusedID)
-            focusView.needsDisplay = true
-        }
+        syncFocusToSurfaceTree(in: tab)
+        _ = tab.registry.makeFirstResponder(for: focusedID, in: window)
     }
 
     // MARK: - Tab Activation Helpers
 
     private func activateCurrentTab() {
         guard let tab = activeTab else { return }
-        refreshHostingView()
-        tab.registry.resumeAll()
+
+        let visibleIDs = Set(tab.splitTree.allLeafIDs())
+        tab.registry.resumeVisible(visibleIDs: visibleIDs)
         rebuildSplitContainer()
         updateLayout()
         syncWindowTitleWithFocusedPane(in: tab)
+        syncFocusToSurfaceTree(in: tab)
         focusActiveTabImmediately()
         restoreFocus()
     }
 
     private func deactivateCurrentTab() {
         guard let tab = activeTab else { return }
-        focusedController?.setFocus(false)
         tab.registry.pauseAll()
+    }
+
+    /// Update libghostty focus for every pane in the tab.
+    private func syncFocusToSurfaceTree(in tab: Tab) {
+        let windowIsKey = window?.isKeyWindow ?? false
+        tab.registry.syncFocus(focusedID: tab.splitTree.focusedLeafID, windowIsKey: windowIsKey)
+    }
+
+    private func applyWindowOcclusion(visible: Bool) {
+        guard let activeTab else {
+            for workspace in windowSession.workspaces {
+                for tab in workspace.tabs {
+                    tab.registry.setOcclusionForAll(occluded: true)
+                }
+            }
+            return
+        }
+
+        for workspace in windowSession.workspaces {
+            for tab in workspace.tabs {
+                if visible && tab.id == activeTab.id {
+                    let visibleIDs = Set(tab.splitTree.allLeafIDs())
+                    tab.registry.resumeVisible(visibleIDs: visibleIDs)
+                } else {
+                    tab.registry.pauseAll()
+                }
+            }
+        }
+
+        if visible {
+            syncFocusToSurfaceTree(in: activeTab)
+        }
     }
 
     private func syncWindowTitleWithFocusedPane(in tab: Tab) {
@@ -541,7 +559,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         if tab.id == activeTab?.id {
             window?.title = tab.tabBarLabel
         }
-        refreshHostingView()
     }
 
     private func resolvedTerminalTabTitle(tab: Tab, focusedPaneID: UUID) -> String {
@@ -602,10 +619,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         workspace.insertTabAdjacentToActive(tab)
         workspace.activeTabID = tab.id
 
-        rebuildSplitContainer()
-        updateLayout()
-        refreshHostingView()
-        restoreFocus()
+        activateCurrentTab()
     }
 
     func createNewTabAtEnd() {
@@ -631,10 +645,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         workspace.addTab(tab)
         workspace.activeTabID = tab.id
 
-        rebuildSplitContainer()
-        updateLayout()
-        refreshHostingView()
-        restoreFocus()
+        activateCurrentTab()
     }
 
     @discardableResult
@@ -662,10 +673,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         workspace.insertTabAdjacentToActive(tab)
         workspace.activeTabID = tab.id
 
-        rebuildSplitContainer()
-        updateLayout()
-        refreshHostingView()
-        restoreFocus()
+        activateCurrentTab()
         scheduleFocusBrowserAddressBar(paneID: browserPaneID)
         return browserPaneID
     }
@@ -782,7 +790,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             if tab.id == self.activeTab?.id, tab.splitTree.focusedLeafID == paneID {
                 self.window?.title = tab.tabBarLabel
             }
-            self.refreshHostingView()
         }
 
         controller.browserView.onURLChanged = { [weak self, weak tab, weak controller] _ in
@@ -795,7 +802,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             if tab.id == self.activeTab?.id, tab.splitTree.focusedLeafID == paneID {
                 self.window?.title = tab.tabBarLabel
             }
-            self.refreshHostingView()
         }
     }
 
@@ -849,7 +855,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             window?.close()
         }
 
-        refreshHostingView()
         closingTabIDs.remove(tabID)
     }
 
@@ -883,7 +888,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private func moveTab(fromIndex: Int, toIndex: Int) {
         guard let workspace = windowSession.activeWorkspace else { return }
         workspace.moveTab(fromIndex: fromIndex, toIndex: toIndex)
-        refreshHostingView()
     }
 
     // MARK: - Workspace Operations
@@ -933,10 +937,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         windowSession.addWorkspace(workspace)
         windowSession.activeWorkspaceID = workspace.id
 
-        rebuildSplitContainer()
-        updateLayout()
-        refreshHostingView()
-        restoreFocus()
+        activateCurrentTab()
         return true
     }
 
@@ -987,7 +988,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         switch result {
         case .switchedTab, .switchedWorkspace:
             activateCurrentTab()
-            refreshHostingView()
         case .windowShouldClose:
             window?.close()
         }
@@ -1013,7 +1013,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     private func moveWorkspace(fromIndex: Int, toIndex: Int) {
         windowSession.moveWorkspace(fromIndex: fromIndex, toIndex: toIndex)
-        refreshHostingView()
     }
 
     private func renameWorkspace(id wsID: UUID, name: String) {
@@ -1022,7 +1021,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         if !trimmed.isEmpty {
             workspace.name = trimmed
         }
-        refreshHostingView()
     }
 
     @discardableResult
@@ -1041,7 +1039,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         }
 
         workspace.workingDirectory = sanitizedPath
-        refreshHostingView()
         return true
     }
 
@@ -1076,13 +1073,11 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             tab.title = ""
             syncTabTitleWithFocusedPane(in: tab)
         }
-        refreshHostingView()
     }
 
     @objc func toggleSidebar() {
         windowSession.showSidebar.toggle()
         updateWindowDecorations()
-        refreshHostingView()
         // Restore keyboard focus to the terminal after sidebar toggle
         restoreFocus()
     }
@@ -1238,25 +1233,18 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private func focusPane(in tab: Tab, targetID: UUID) {
         guard tab.registry.paneView(for: targetID) != nil else { return }
         tab.splitTree.focusedLeafID = targetID
-        synchronizePaneFocus(in: tab, focusedID: targetID)
+        syncFocusToSurfaceTree(in: tab)
         _ = tab.registry.makeFirstResponder(for: targetID, in: window)
-        markFocusedPane(in: tab, focusedID: targetID)
+        syncTabTitleWithFocusedPane(in: tab)
         updateLayout()
     }
 
     private func synchronizePaneFocus(in tab: Tab, focusedID: UUID) {
-        for id in tab.registry.allIDs where id != focusedID {
-            tab.registry.controller(for: id)?.setFocus(false)
-            tab.registry.view(for: id)?.resetFocusState()
-            tab.registry.paneView(for: id)?.needsDisplay = true
-        }
+        syncFocusToSurfaceTree(in: tab)
     }
 
     private func markFocusedPane(in tab: Tab, focusedID: UUID) {
-        tab.registry.controller(for: focusedID)?.setFocus(true)
-        tab.registry.controller(for: focusedID)?.refresh()
         syncTabTitleWithFocusedPane(in: tab)
-        tab.registry.paneView(for: focusedID)?.needsDisplay = true
     }
 
     func renameActiveTab() {
@@ -1683,7 +1671,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         if tab.id == activeTab?.id {
             window?.title = tab.tabBarLabel
         }
-        refreshHostingView()
     }
 
     @objc private func handleSetPwdNotification(_ notification: Notification) {
@@ -1741,7 +1728,6 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     @objc private func handleConfigChangeNotification(_ notification: Notification) {
         updateWindowBackgroundAppearance()
-        refreshHostingView()
     }
 
     @objc private func handleWillBeginEditing(_ notification: Notification) {
@@ -1829,24 +1815,30 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     func windowDidBecomeKey(_ notification: Notification) {
         GhosttyAppController.shared.setFocus(true)
-        focusedController?.setFocus(true)
         updateWindowBackgroundAppearance()
         if let tab = activeTab {
             syncWindowTitleWithFocusedPane(in: tab)
+            syncFocusToSurfaceTree(in: tab)
         }
         restoreFocus()
     }
 
     func windowDidResignKey(_ notification: Notification) {
         GhosttyAppController.shared.setFocus(false)
-        focusedController?.setFocus(false)
+        if let tab = activeTab {
+            syncFocusToSurfaceTree(in: tab)
+        }
+    }
+
+    func windowDidChangeOcclusionState(_ notification: Notification) {
+        let visible = window?.occlusionState.contains(.visible) ?? false
+        applyWindowOcclusion(visible: visible)
     }
 
     func windowDidChangeBackingProperties(_ notification: Notification) {
-        guard let window = self.window, let tab = activeTab else { return }
-        let scale = window.backingScaleFactor
+        guard let tab = activeTab else { return }
         for id in tab.registry.allIDs {
-            tab.registry.controller(for: id)?.setContentScale(scale)
+            tab.registry.view(for: id)?.viewDidChangeBackingProperties()
         }
     }
 

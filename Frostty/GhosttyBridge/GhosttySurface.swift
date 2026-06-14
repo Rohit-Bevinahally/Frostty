@@ -99,9 +99,13 @@ final class GhosttySurfaceController: Identifiable {
         self.surfaceSize = GhosttyFFI.surfaceSize(surface)
     }
 
-    func setContentScale(_ scale: Double) {
+    func setContentScale(xScale: Double, yScale: Double) {
         guard let surface else { return }
-        GhosttyFFI.surfaceSetContentScale(surface, xScale: scale, yScale: scale)
+        GhosttyFFI.surfaceSetContentScale(surface, xScale: xScale, yScale: yScale)
+    }
+
+    func setContentScale(_ scale: Double) {
+        setContentScale(xScale: scale, yScale: scale)
     }
 
     // MARK: - Focus & Visibility

@@ -87,8 +87,21 @@ final class BrowserPaneView: NSView {
         updateGhosttyBackdrop()
         paneDropOverlayView.frame = bounds
         paneHandleHostingView.frame = bounds
-        refreshPaneHandle()
         updatePaneDragUI()
+        updatePaneHandleIfNeeded()
+    }
+
+    func setSuspended(_ suspended: Bool) {
+        controller.setSuspended(suspended)
+        isHidden = suspended
+    }
+
+    private var lastPaneHandleDragEnabled: Bool?
+
+    private func updatePaneHandleIfNeeded() {
+        guard dragWidgetsEnabled != lastPaneHandleDragEnabled else { return }
+        lastPaneHandleDragEnabled = dragWidgetsEnabled
+        refreshPaneHandle()
     }
 
     private func updateGhosttyBackdrop() {

@@ -187,6 +187,14 @@ final class BrowserView: NSView {
         webView.reload()
     }
 
+    func setSuspended(_ suspended: Bool) {
+        webView.isHidden = suspended
+        webView.alphaValue = suspended ? 0 : 1
+        if let pagePreferences = webView.configuration.defaultWebpagePreferences {
+            pagePreferences.allowsContentJavaScript = !suspended
+        }
+    }
+
     func focus(in window: NSWindow? = nil) -> Bool {
         let targetWindow = window ?? webView.window ?? self.window
         guard let targetWindow else { return false }

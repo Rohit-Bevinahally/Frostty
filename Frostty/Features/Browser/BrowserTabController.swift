@@ -66,6 +66,10 @@ final class BrowserTabController {
         browserView.loadURL(url)
     }
 
+    func setSuspended(_ suspended: Bool) {
+        browserView.setSuspended(suspended)
+    }
+
     deinit {
         browserTabControllerLogger.debug("BrowserTabController deinit")
     }

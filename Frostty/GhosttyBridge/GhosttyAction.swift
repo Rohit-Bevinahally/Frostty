@@ -253,8 +253,8 @@ enum GhosttyActionRouter {
     }
 
     private static func handleRender(_ app: ghostty_app_t, target: ghostty_target_s) -> Bool {
-        guard let surfaceView = surfaceView(from: target) else { return false }
-        surfaceView.needsDisplay = true
+        // libghostty drives Metal rendering directly on macOS; AppKit invalidation is redundant
+        // and causes full-view repaint storms. Ghostty's macOS shell ignores this action.
         return true
     }
 
@@ -421,6 +421,9 @@ enum GhosttyActionRouter {
         health: ghostty_action_renderer_health_e
     ) -> Bool {
         guard let surfaceView = surfaceView(from: target) else { return false }
+
+        let isHealthy = health == GHOSTTY_RENDERER_HEALTH_HEALTHY
+        surfaceView.setRendererHealthy(isHealthy)
 
         NotificationCenter.default.post(
             name: .ghosttyRendererHealth,

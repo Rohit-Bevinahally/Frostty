@@ -111,7 +111,9 @@ final class SurfaceRegistry {
             switch self {
             case .terminal(let entry):
                 entry.controller.setFocus(focused)
-                if !focused {
+                if focused {
+                    entry.view.noteExternalFocusState(true)
+                } else {
                     entry.view.resetFocusState()
                 }
             case .browser:
@@ -119,14 +121,30 @@ final class SurfaceRegistry {
             }
         }
 
+        func refreshIfVisible() {
+            switch self {
+            case .terminal(let entry):
+                entry.controller.refresh()
+            case .browser(let entry):
+                entry.view.needsLayout = true
+            }
+        }
+
+        func setOcclusion(_ occluded: Bool) {
+            switch self {
+            case .terminal(let entry):
+                entry.controller.setOcclusion(occluded)
+            case .browser(let entry):
+                entry.view.setSuspended(occluded)
+            }
+        }
+
         func refresh() {
             switch self {
             case .terminal(let entry):
                 entry.controller.refresh()
-                entry.view.needsDisplay = true
             case .browser(let entry):
                 entry.view.needsLayout = true
-                entry.view.needsDisplay = true
             }
         }
 
@@ -212,6 +230,7 @@ final class SurfaceRegistry {
             terminalEntry.view.removeFromSuperview()
             terminalEntry.controller.requestClose()
         case .browser(let browserEntry):
+            browserEntry.view.setSuspended(true)
             browserEntry.view.removeFromSuperview()
         }
 
@@ -227,6 +246,7 @@ final class SurfaceRegistry {
         guard var entry = entries.removeValue(forKey: id) else { return nil }
         entry.state = .attached
         entry.setFocus(false)
+        entry.setOcclusion(true)
         entry.removeFromSuperview()
         logger.info("Pane detached from registry: \(id)")
         return entry
@@ -278,15 +298,51 @@ final class SurfaceRegistry {
         entries[id]?.makeFirstResponder(in: window) ?? false
     }
 
+    /// Unfocus and occlude every pane in this registry.
     func pauseAll() {
         for id in allIDs {
             entries[id]?.setFocus(false)
+            setOcclusion(for: id, occluded: true)
         }
     }
 
-    func resumeAll() {
+    /// Occlude all panes, then de-occlude only those in `visibleIDs`.
+    func resumeVisible(visibleIDs: Set<UUID>) {
+        setOcclusionForAll(occluded: true)
+        for id in visibleIDs where entries[id] != nil {
+            setOcclusion(for: id, occluded: false)
+            entries[id]?.refreshIfVisible()
+        }
+    }
+
+    /// Backward-compatible alias; prefer `resumeVisible(visibleIDs:)`.
+    func resumeAll(visibleIDs: Set<UUID>? = nil) {
+        if let visibleIDs {
+            resumeVisible(visibleIDs: visibleIDs)
+        } else {
+            setOcclusionForAll(occluded: false)
+        }
+    }
+
+    func setOcclusion(for id: UUID, occluded: Bool) {
+        entries[id]?.setOcclusion(occluded)
+    }
+
+    func setOcclusionForAll(occluded: Bool) {
         for id in allIDs {
-            entries[id]?.refresh()
+            setOcclusion(for: id, occluded: occluded)
+        }
+    }
+
+    /// Sync libghostty focus state for all panes. Exactly one pane is focused when the window is key.
+    func syncFocus(focusedID: UUID?, windowIsKey: Bool) {
+        for id in allIDs {
+            let shouldFocus = windowIsKey && focusedID == id
+            if shouldFocus {
+                entries[id]?.setFocus(true)
+            } else {
+                entries[id]?.setFocus(false)
+            }
         }
     }
 
@@ -295,11 +351,9 @@ final class SurfaceRegistry {
     func applyConfig(_ config: ghostty_config_t) {
         for id in allIDs {
             guard let entry = entries[id] else { continue }
-            guard let controller = entry.terminalController,
-                  let view = entry.terminalView else { continue }
+            guard let controller = entry.terminalController else { continue }
             controller.updateConfig(config)
             controller.refresh()
-            view.needsDisplay = true
         }
     }
 }

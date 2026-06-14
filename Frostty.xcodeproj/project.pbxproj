@@ -21,6 +21,7 @@
 		28AF7AB2B48992623A91A664 /* SurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */; };
 		2C4D14F22B2D6757E0D75635 /* WorkingDirectoryField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE36B15AE74260F554CF552 /* WorkingDirectoryField.swift */; };
 		2F1D2B4CD2212785F9959B05 /* ShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */; };
+		3440A6F6681D0907B275B076 /* BrowserAddressResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91F3E9524B9AE8791338AA79 /* BrowserAddressResolution.swift */; };
 		4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */; };
 		498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51514732293A8D67475BF38D /* EventTranslator.swift */; };
 		4E93F54C94B3F282CCDC8053 /* BrowserAutomation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */; };
@@ -29,21 +30,18 @@
 		5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */; };
 		63D3F45F212D9F5A12ABBACD /* GhosttyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249A632020C8B497F269BFA7 /* GhosttyApp.swift */; };
 		7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57652394DF6F43C2D5546861 /* SidebarView.swift */; };
-		70259D032EF64307839A717F /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C17E75CD042ACD39FFE8EE /* MetalView.swift */; };
 		7825D1BCEAE4BC1142461CA1 /* BrowserServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955A6D4490E384DAC90489 /* BrowserServer.swift */; };
 		7D3E40B275F372A5A6AC79F8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */; };
-		B1C2D3E42F5061728394A5B7 /* FrosttyNotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F53A60718293A5B6C8 /* FrosttyNotificationNames.swift */; };
-		7E8F9A0B1C2D3E4F50617283 /* PaneDragChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A0B1C2D3E4F5061728394 /* PaneDragChrome.swift */; };
 		92614F6F15FA239915D5CB7D /* SurfaceScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */; };
 		93C4ECD07F01D7E152A57E8D /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564B0320DEC8F58C135FA1EF /* BrowserView.swift */; };
 		943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */; };
 		9AC9419FDF40538A8CBBC8C9 /* BrowserState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9EA7EE2E09697D636D860D /* BrowserState.swift */; };
 		A365C789DD0DB91E3EDC585B /* SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */; };
-		3A8F9E2D1C4B5A60718293E4 /* BrowserAddressResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7E6D5C3A29180716253495 /* BrowserAddressResolution.swift */; };
 		B6CCE5D5AEBA34A2EBDC1115 /* BrowserSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FA2B164D0E6C1005CCE997 /* BrowserSecurity.swift */; };
 		B85D100DD9E1EAEB16C6C577 /* GhosttyConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */; };
 		CE18A4587B46694135B4692B /* BrowserPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F752769A958E669C0058CD /* BrowserPaneView.swift */; };
 		DF831D97EE4AEF881B180695 /* BrowserContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1156E0EC31CA090E431B6836 /* BrowserContainerView.swift */; };
+		E23D63953F5B18BBFACBDE6C /* PaneDragChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722071154EFF3E60609C511D /* PaneDragChrome.swift */; };
 		E56256BA673A2677328B6A9E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C901E4BB3502A7E1787E7B48 /* main.swift */; };
 		E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */; };
 		E90C34FD17CCA6A5F14F2A87 /* GhosttyAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */; };
@@ -53,6 +51,7 @@
 		F8CAEC60CF55F9E567364B84 /* HTTPParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62072F0C657591D9AC84236D /* HTTPParser.swift */; };
 		F97C15B1378F19A82641B35C /* GhosttyKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9645B2623F21205017E12947 /* GhosttyKit.xcframework */; };
 		F9B4E042D3557910AF51A62F /* BrowserAutomationError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F05B73511114A62D3A1AB4 /* BrowserAutomationError.swift */; };
+		FD7567AC79A5498BBDD360A2 /* FrosttyNotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE86AADA74BD2DD5A562FF2 /* FrosttyNotificationNames.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -69,20 +68,19 @@
 		2A6165801BFF45A91EC7329B /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		2BF4FF54CF98A611449EB62D /* BrowserTabBroker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabBroker.swift; sourceTree = "<group>"; };
 		3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAutomation.swift; sourceTree = "<group>"; };
-		4B7E6D5C3A29180716253495 /* BrowserAddressResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAddressResolution.swift; sourceTree = "<group>"; };
 		51514732293A8D67475BF38D /* EventTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTranslator.swift; sourceTree = "<group>"; };
 		5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitDividerView.swift; sourceTree = "<group>"; };
 		55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindowController.swift; sourceTree = "<group>"; };
 		564B0320DEC8F58C135FA1EF /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		57652394DF6F43C2D5546861 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		62072F0C657591D9AC84236D /* HTTPParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPParser.swift; sourceTree = "<group>"; };
+		722071154EFF3E60609C511D /* PaneDragChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaneDragChrome.swift; sourceTree = "<group>"; };
 		7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		753D2B2CA2C0975F998C1922 /* BrowserTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabController.swift; sourceTree = "<group>"; };
 		75FA2B164D0E6C1005CCE997 /* BrowserSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSecurity.swift; sourceTree = "<group>"; };
-		C2D3E4F53A60718293A5B6C8 /* FrosttyNotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyNotificationNames.swift; sourceTree = "<group>"; };
-		8F9A0B1C2D3E4F5061728394 /* PaneDragChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaneDragChrome.swift; sourceTree = "<group>"; };
 		7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceView.swift; sourceTree = "<group>"; };
 		7F0919F243D39A9055543897 /* GhosttyFFI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyFFI.swift; sourceTree = "<group>"; };
+		91F3E9524B9AE8791338AA79 /* BrowserAddressResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAddressResolution.swift; sourceTree = "<group>"; };
 		9327CB20572568F4B7514664 /* BrowserToolHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserToolHandler.swift; sourceTree = "<group>"; };
 		9645B2623F21205017E12947 /* GhosttyKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = GhosttyKit.xcframework; sourceTree = "<group>"; };
 		9D0BA29DAA133631BF1D865E /* MainContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainContentView.swift; sourceTree = "<group>"; };
@@ -93,8 +91,8 @@
 		B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindow.swift; sourceTree = "<group>"; };
 		B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutManager.swift; sourceTree = "<group>"; };
 		C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitContainerView.swift; sourceTree = "<group>"; };
-		C7C17E75CD042ACD39FFE8EE /* MetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalView.swift; sourceTree = "<group>"; };
 		C901E4BB3502A7E1787E7B48 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		CEE86AADA74BD2DD5A562FF2 /* FrosttyNotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyNotificationNames.swift; sourceTree = "<group>"; };
 		CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttySurface.swift; sourceTree = "<group>"; };
 		D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceScrollView.swift; sourceTree = "<group>"; };
 		D7955A6D4490E384DAC90489 /* BrowserServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserServer.swift; sourceTree = "<group>"; };
@@ -122,7 +120,7 @@
 		01195010A3B8F441E08CAB1C /* Browser */ = {
 			isa = PBXGroup;
 			children = (
-				4B7E6D5C3A29180716253495 /* BrowserAddressResolution.swift */,
+				91F3E9524B9AE8791338AA79 /* BrowserAddressResolution.swift */,
 				3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */,
 				F6F05B73511114A62D3A1AB4 /* BrowserAutomationError.swift */,
 				75FA2B164D0E6C1005CCE997 /* BrowserSecurity.swift */,
@@ -149,7 +147,7 @@
 		0E282736EF8E7032BB444116 /* Surface */ = {
 			isa = PBXGroup;
 			children = (
-				8F9A0B1C2D3E4F5061728394 /* PaneDragChrome.swift */,
+				722071154EFF3E60609C511D /* PaneDragChrome.swift */,
 				EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */,
 				C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */,
 				5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */,
@@ -291,13 +289,12 @@
 			isa = PBXGroup;
 			children = (
 				51514732293A8D67475BF38D /* EventTranslator.swift */,
+				CEE86AADA74BD2DD5A562FF2 /* FrosttyNotificationNames.swift */,
 				1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */,
 				249A632020C8B497F269BFA7 /* GhosttyApp.swift */,
-				C2D3E4F53A60718293A5B6C8 /* FrosttyNotificationNames.swift */,
 				026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */,
 				7F0919F243D39A9055543897 /* GhosttyFFI.swift */,
 				CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */,
-				C7C17E75CD042ACD39FFE8EE /* MetalView.swift */,
 			);
 			path = GhosttyBridge;
 			sourceTree = "<group>";
@@ -390,9 +387,9 @@
 			files = (
 				7D3E40B275F372A5A6AC79F8 /* AppDelegate.swift in Sources */,
 				E924CD8B00C535769AAC7B28 /* AppSession.swift in Sources */,
+				3440A6F6681D0907B275B076 /* BrowserAddressResolution.swift in Sources */,
 				4E93F54C94B3F282CCDC8053 /* BrowserAutomation.swift in Sources */,
 				F9B4E042D3557910AF51A62F /* BrowserAutomationError.swift in Sources */,
-				3A8F9E2D1C4B5A60718293E4 /* BrowserAddressResolution.swift in Sources */,
 				DF831D97EE4AEF881B180695 /* BrowserContainerView.swift in Sources */,
 				CE18A4587B46694135B4692B /* BrowserPaneView.swift in Sources */,
 				B6CCE5D5AEBA34A2EBDC1115 /* BrowserSecurity.swift in Sources */,
@@ -404,18 +401,18 @@
 				93C4ECD07F01D7E152A57E8D /* BrowserView.swift in Sources */,
 				22804567D1D916C659EE57B1 /* DownloadManager.swift in Sources */,
 				498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */,
+				FD7567AC79A5498BBDD360A2 /* FrosttyNotificationNames.swift in Sources */,
 				E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */,
 				943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */,
 				E90C34FD17CCA6A5F14F2A87 /* GhosttyAction.swift in Sources */,
 				63D3F45F212D9F5A12ABBACD /* GhosttyApp.swift in Sources */,
-				B1C2D3E42F5061728394A5B7 /* FrosttyNotificationNames.swift in Sources */,
 				B85D100DD9E1EAEB16C6C577 /* GhosttyConfig.swift in Sources */,
 				199593384FC4E46191AEB84A /* GhosttyFFI.swift in Sources */,
 				4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */,
 				F8CAEC60CF55F9E567364B84 /* HTTPParser.swift in Sources */,
 				58ACD4B61AF6785D99CBCCA4 /* MainContentView.swift in Sources */,
-				70259D032EF64307839A717F /* MetalView.swift in Sources */,
 				11F042ADFF5046B9C0CC135B /* NewWorkspaceSheet.swift in Sources */,
+				E23D63953F5B18BBFACBDE6C /* PaneDragChrome.swift in Sources */,
 				A365C789DD0DB91E3EDC585B /* SearchBarView.swift in Sources */,
 				2F1D2B4CD2212785F9959B05 /* ShortcutManager.swift in Sources */,
 				7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */,
@@ -425,7 +422,6 @@
 				013BB0D2B1067BD9F9698762 /* SurfaceRegistry.swift in Sources */,
 				92614F6F15FA239915D5CB7D /* SurfaceScrollView.swift in Sources */,
 				28AF7AB2B48992623A91A664 /* SurfaceView.swift in Sources */,
-				7E8F9A0B1C2D3E4F50617283 /* PaneDragChrome.swift in Sources */,
 				0D5663F98C28148D1CFA0B7B /* Tab.swift in Sources */,
 				010B2ED011450841882CB09A /* TabBarView.swift in Sources */,
 				5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */,

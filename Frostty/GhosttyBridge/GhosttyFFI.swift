@@ -200,7 +200,7 @@ enum GhosttyFFI {
     }
 
     static func surfaceSetOcclusion(_ surface: ghostty_surface_t, occluded: Bool) {
-        ghostty_surface_set_occlusion(surface, occluded)
+        ghostty_surface_set_occlusion(surface, !occluded)
     }
 
     static func surfaceSetColorScheme(_ surface: ghostty_surface_t, scheme: ghostty_color_scheme_e) {

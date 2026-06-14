@@ -54,6 +54,13 @@ class SurfaceView: NSView, ObservableObject {
     /// Whether the view is focused.
     private(set) var focused: Bool = false
 
+    /// Whether libghostty reports the renderer as healthy.
+    private(set) var rendererHealthy: Bool = true
+
+    private let unhealthyOverlay = SurfaceUnhealthyOverlayView()
+
+    private var screenChangeObserver: NSObjectProtocol?
+
     /// The previous pressure stage for force touch handling.
     private var prevPressureStage: Int = 0
 
@@ -90,6 +97,9 @@ class SurfaceView: NSView, ObservableObject {
     /// Whether a refresh is needed after the first real (non-zero) size is set.
     private var needsInitialRefresh = true
 
+    /// Last logical content size sent to libghostty (viewport/document, not AppKit frame during animation).
+    private(set) var contentSize: NSSize = .zero
+
     // MARK: - NSView Overrides
 
     override var acceptsFirstResponder: Bool { true }
@@ -107,6 +117,9 @@ class SurfaceView: NSView, ObservableObject {
 
     deinit {
         MainActor.assumeIsolated {
+            if let screenChangeObserver {
+                NotificationCenter.default.removeObserver(screenChangeObserver)
+            }
             trackingAreas.forEach { removeTrackingArea($0) }
         }
     }
@@ -115,11 +128,17 @@ class SurfaceView: NSView, ObservableObject {
 
     private func setupView() {
         wantsLayer = true
+        clipsToBounds = true
 
-        // Replace the default layer with a configured CAMetalLayer for GPU rendering.
-        let metalLayer = GhosttyMetalLayer()
-        metalLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
-        self.layer = metalLayer
+        unhealthyOverlay.isHidden = true
+        unhealthyOverlay.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(unhealthyOverlay)
+        NSLayoutConstraint.activate([
+            unhealthyOverlay.leadingAnchor.constraint(equalTo: leadingAnchor),
+            unhealthyOverlay.trailingAnchor.constraint(equalTo: trailingAnchor),
+            unhealthyOverlay.topAnchor.constraint(equalTo: topAnchor),
+            unhealthyOverlay.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 
     /// Initialize the ghostty surface for this view.
@@ -137,25 +156,70 @@ class SurfaceView: NSView, ObservableObject {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+
+        if let screenChangeObserver {
+            NotificationCenter.default.removeObserver(screenChangeObserver)
+            self.screenChangeObserver = nil
+        }
+
         guard let window = self.window else { return }
 
-        // Update Metal layer content scale.
         let scale = window.backingScaleFactor
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         layer?.contentsScale = scale
         CATransaction.commit()
 
-        // Update ghostty content scale.
-        surfaceController?.setContentScale(scale)
+        surfaceController?.setContentScale(xScale: scale, yScale: scale)
 
-        // Set the display ID for vsync.
         if let screen = window.screen {
             surfaceController?.setDisplayID(screen.displayID ?? 0)
         }
 
-        // Update tracking areas.
+        screenChangeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeScreenNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.handleWindowScreenChanged()
+            }
+        }
+
         updateTrackingAreas()
+        completeInitialSizingIfNeeded()
+    }
+
+    /// Apply size + refresh after the view joins a window (e.g. first tab layout).
+    func completeInitialSizingIfNeeded() {
+        guard window != nil else { return }
+        let size = contentSize.width > 0 && contentSize.height > 0 ? contentSize : bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+        sizeDidChange(size)
+        if needsInitialRefresh {
+            needsInitialRefresh = false
+            surfaceController?.refresh()
+        }
+    }
+
+    /// Update libghostty surface size from logical content dimensions.
+    func sizeDidChange(_ size: NSSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        contentSize = size
+        let scaledSize = convertToBacking(NSRect(origin: .zero, size: size)).size
+        surfaceController?.updateSize(
+            width: UInt32(scaledSize.width),
+            height: UInt32(scaledSize.height)
+        )
+    }
+
+    private func handleWindowScreenChanged() {
+        guard let window, let screen = window.screen else { return }
+        surfaceController?.setDisplayID(screen.displayID ?? 0)
+        DispatchQueue.main.async { [weak self] in
+            self?.viewDidChangeBackingProperties()
+            self?.surfaceController?.refresh()
+        }
     }
 
     override func viewDidChangeBackingProperties() {
@@ -163,50 +227,56 @@ class SurfaceView: NSView, ObservableObject {
 
         guard let window else { return }
 
-        // Update metal layer content scale to match window.
         let scale = window.backingScaleFactor
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         layer?.contentsScale = scale
         CATransaction.commit()
 
-        guard let surfaceController else { return }
+        guard surfaceController != nil else { return }
 
-        // Update surface content scale.
-        surfaceController.setContentScale(scale)
+        applyContentScaleFromFrame()
 
-        // When scale changes, framebuffer size changes too.
-        let fbFrame = convertToBacking(frame)
+        if contentSize.width > 0, contentSize.height > 0 {
+            sizeDidChange(contentSize)
+        } else if frame.width > 0, frame.height > 0 {
+            sizeDidChange(frame.size)
+        }
+
+        surfaceController?.refresh()
+    }
+
+    private func applyContentScaleFromFrame() {
         guard frame.width > 0, frame.height > 0 else { return }
-        surfaceController.updateSize(
-            width: UInt32(fbFrame.width),
-            height: UInt32(fbFrame.height)
-        )
+        let fbFrame = convertToBacking(frame)
+        let xScale = fbFrame.width / frame.width
+        let yScale = fbFrame.height / frame.height
+        surfaceController?.setContentScale(xScale: xScale, yScale: yScale)
+    }
+
+    override func layout() {
+        super.layout()
+        unhealthyOverlay.frame = bounds
     }
 
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
 
-        // Skip zero-size updates to prevent Metal layer bad state.
+        // Scroll/document height changes propagate through contentSizeDidChange.
+        guard contentSize.width <= 0 || contentSize.height <= 0 else { return }
         guard newSize.width > 0, newSize.height > 0 else { return }
 
-        // Update the metal layer drawable size.
-        let scaledSize = convertToBacking(NSRect(origin: .zero, size: newSize)).size
-        if let metalLayer = layer as? CAMetalLayer {
-            metalLayer.drawableSize = scaledSize
-        }
+        sizeDidChange(newSize)
 
-        // Update ghostty surface size.
-        surfaceController?.updateSize(
-            width: UInt32(scaledSize.width),
-            height: UInt32(scaledSize.height)
-        )
-
-        // Force re-render on the first real size after surface creation.
         if needsInitialRefresh, window != nil {
             needsInitialRefresh = false
             surfaceController?.refresh()
         }
+    }
+
+    /// Notify libghostty when the visible viewport size changes (scroll chrome padding).
+    func contentSizeDidChange(_ size: NSSize) {
+        sizeDidChange(size)
     }
 
     override func updateTrackingAreas() {
@@ -245,10 +315,27 @@ class SurfaceView: NSView, ObservableObject {
     }
 
     /// Reset the focus tracking state without notifying the controller.
-    /// Used by SurfaceRegistry.pauseAll() to keep SurfaceView.focused in sync
-    /// when the controller's focus is set directly.
     func resetFocusState() {
         focused = false
+    }
+
+    /// Keep AppKit focus state aligned when libghostty focus is set externally.
+    func noteExternalFocusState(_ newFocused: Bool) {
+        focused = newFocused
+        updateFocusBorder()
+    }
+
+    /// Apply focus from the window controller without changing first responder.
+    func applyExternalFocus(_ newFocused: Bool) {
+        guard focused != newFocused else { return }
+        focused = newFocused
+        surfaceController?.setFocus(newFocused)
+        updateFocusBorder()
+    }
+
+    func setRendererHealthy(_ healthy: Bool) {
+        rendererHealthy = healthy
+        unhealthyOverlay.isHidden = healthy
     }
 
     private func focusDidChange(_ newFocused: Bool) {
@@ -594,6 +681,7 @@ class SurfaceView: NSView, ObservableObject {
     // MARK: - Mouse Input
 
     override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
         let mods = EventTranslator.translateModifiers(event.modifierFlags)
         surfaceController?.sendMouseButton(
             state: GHOSTTY_MOUSE_PRESS,
@@ -924,5 +1012,36 @@ extension SurfaceView {
 
     @IBAction func performFindAction(_ sender: Any?) {
         surfaceController?.performAction("start_search")
+    }
+}
+
+// MARK: - Renderer Health Overlay
+
+@MainActor
+private final class SurfaceUnhealthyOverlayView: NSView {
+    private let label = NSTextField(labelWithString: "Terminal renderer unavailable")
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.85).cgColor
+
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
+            label.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 12),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -12),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
     }
 }

@@ -58,7 +58,7 @@ class SurfaceScrollView: NSView {
 
     static let maxDocumentHeight: CGFloat = 1_000_000_000
 
-    // MARK: - Static Helpers (testable)
+    // MARK: - Static Helpers
 
     /// Validate and clamp scrollbar state values.
     /// Returns nil if total is 0 (nothing to scroll).
@@ -133,6 +133,11 @@ class SurfaceScrollView: NSView {
     private var cellSizeObserver: NSObjectProtocol?
     private var configChangeObserver: NSObjectProtocol?
 
+    private var lastPaneHandlePaneID: UUID?
+    private var lastPaneHandleDragEnabled: Bool?
+    private var scrollerStyleObserver: NSObjectProtocol?
+    private var scrollPocketFrameObserver: NSObjectProtocol?
+
     private var searchBar: SearchBarView?
     private var startSearchObserver: NSObjectProtocol?
     private var endSearchObserver: NSObjectProtocol?
@@ -179,6 +184,8 @@ class SurfaceScrollView: NSView {
             if let obs = endSearchObserver { NotificationCenter.default.removeObserver(obs) }
             if let obs = searchTotalObserver { NotificationCenter.default.removeObserver(obs) }
             if let obs = searchSelectedObserver { NotificationCenter.default.removeObserver(obs) }
+            if let obs = scrollerStyleObserver { NotificationCenter.default.removeObserver(obs) }
+            if let obs = scrollPocketFrameObserver { NotificationCenter.default.removeObserver(obs) }
             NotificationCenter.default.removeObserver(self)
         }
     }
@@ -261,6 +268,46 @@ class SurfaceScrollView: NSView {
 
         // Apply scrollbar config
         applyScrollbarConfig()
+
+        scrollerStyleObserver = NotificationCenter.default.addObserver(
+            forName: NSScroller.preferredScrollerStyleDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.scrollView.scrollerStyle = .overlay
+                self?.synchronizeCoreSurface()
+            }
+        }
+
+        if #available(macOS 26.0, *) {
+            scrollPocketFrameObserver = NotificationCenter.default.addObserver(
+                forName: NSView.frameDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                MainActor.assumeIsolated {
+                    self?.handleScrollPocketFrameChange(notification)
+                }
+            }
+        }
+    }
+
+    @available(macOS 26.0, *)
+    private func handleScrollPocketFrameChange(_ notification: Notification) {
+        guard let view = notification.object as? NSView else { return }
+        guard view.className.contains("NSScrollPocket") else { return }
+        guard scrollView.subviews.contains(view) else { return }
+        view.postsFrameChangedNotifications = false
+        view.frame = NSRect(x: 0, y: 0, width: 0, height: 0)
+        view.postsFrameChangedNotifications = true
+    }
+
+    private func synchronizeCoreSurface() {
+        let width = scrollView.contentSize.width
+        let height = surfaceView.frame.height
+        guard width > 0, height > 0 else { return }
+        surfaceView.contentSizeDidChange(NSSize(width: width, height: height))
     }
 
     private func setupPaneDragWidgets() {
@@ -330,10 +377,19 @@ class SurfaceScrollView: NSView {
     override func layout() {
         super.layout()
         synchronizeLayout()
+        synchronizeCoreSurface()
         paneDropOverlayView.frame = bounds
         paneHandleHostingView.frame = bounds
-        refreshPaneHandle()
         updatePaneDragUI()
+        updatePaneHandleIfNeeded()
+    }
+
+    private func updatePaneHandleIfNeeded() {
+        let currentDragEnabled = dragWidgetsEnabled
+        guard paneID != lastPaneHandlePaneID || currentDragEnabled != lastPaneHandleDragEnabled else { return }
+        lastPaneHandlePaneID = paneID
+        lastPaneHandleDragEnabled = currentDragEnabled
+        refreshPaneHandle()
     }
 
     private func updatePaneDragUI() {

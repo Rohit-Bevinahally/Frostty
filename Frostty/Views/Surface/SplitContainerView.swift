@@ -178,6 +178,8 @@ class SplitContainerView: NSView {
     }
 
     private func layoutLeaf(_ id: UUID, in rect: CGRect) {
+        registry.setOcclusion(for: id, occluded: false)
+
         if let surfaceView = registry.view(for: id) {
             let wrapper: SurfaceScrollView
             if let existing = leafContainers[id] as? SurfaceScrollView {
@@ -197,6 +199,7 @@ class SplitContainerView: NSView {
             if wrapper.superview !== self {
                 addSubview(wrapper)
             }
+            surfaceView.completeInitialSizingIfNeeded()
             return
         }
 
@@ -310,6 +313,7 @@ class SplitContainerView: NSView {
     private func removeHiddenLeafContainers(except visibleLeafIDs: [UUID]) {
         let visibleIDs = Set(visibleLeafIDs)
         for (id, paneView) in leafContainers where !visibleIDs.contains(id) {
+            registry.setOcclusion(for: id, occluded: true)
             paneView.removeFromSuperview()
         }
     }

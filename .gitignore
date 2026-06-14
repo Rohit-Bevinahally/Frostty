@@ -3,3 +3,4 @@ spec/
 macos/
 .claude/
 xcuserdata/
+build/
