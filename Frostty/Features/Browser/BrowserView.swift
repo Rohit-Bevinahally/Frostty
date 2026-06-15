@@ -5,6 +5,23 @@ import os
 private let browserViewLogger = Logger(subsystem: "com.frostty.terminal", category: "BrowserView")
 
 @MainActor
+private final class PreviewScriptMessageHandler: NSObject, WKScriptMessageHandler {
+    var onMessage: (@MainActor (String) -> Void)?
+
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        guard message.name == "frosttyPreview",
+              let body = message.body as? [String: Any],
+              let type = body["type"] as? String else { return }
+        MainActor.assumeIsolated {
+            onMessage?(type)
+        }
+    }
+}
+
+@MainActor
 private final class FrosttyBrowserWebView: WKWebView {
     var onFocusChanged: ((Bool) -> Void)?
 
@@ -56,15 +73,27 @@ private final class FrosttyBrowserWebView: WKWebView {
 
 @MainActor
 final class BrowserView: NSView {
+    private struct CustomDocumentLoadState {
+        let displayURL: URL
+        let title: String
+    }
+
     private let webView: FrosttyBrowserWebView
+    private let previewMessageHandler = PreviewScriptMessageHandler()
+    private var previewBridgeInstalled = false
     private let state: BrowserState
     private let downloadManager: DownloadManager
     private var redirectCounts: [ObjectIdentifier: Int] = [:]
+    private var customDocumentLoadState: CustomDocumentLoadState?
 
     var onTitleChanged: ((String) -> Void)?
     var onURLChanged: ((URL) -> Void)?
     var onNavigationCommit: (() -> Void)?
     var onFocus: (() -> Void)?
+    var onPreviewBridgeMessage: (@MainActor (String) -> Void)? {
+        get { previewMessageHandler.onMessage }
+        set { previewMessageHandler.onMessage = newValue }
+    }
 
     nonisolated(unsafe) private var configChangeObserver: NSObjectProtocol?
 
@@ -166,6 +195,8 @@ final class BrowserView: NSView {
     }
 
     func loadURL(_ url: URL) {
+        customDocumentLoadState = nil
+        setPreviewBridgeEnabled(false)
         state.url = url
         onURLChanged?(url)
         if Self.isAboutBlankURL(url) {
@@ -173,6 +204,24 @@ final class BrowserView: NSView {
         } else {
             webView.load(URLRequest(url: url))
         }
+    }
+
+    func loadHTMLString(
+        _ html: String,
+        baseURL: URL? = nil,
+        displayURL: URL,
+        title: String,
+        enablePreviewBridge: Bool = false
+    ) {
+        customDocumentLoadState = CustomDocumentLoadState(displayURL: displayURL, title: title)
+        setPreviewBridgeEnabled(enablePreviewBridge)
+        state.url = displayURL
+        state.title = title
+        state.isLoading = true
+        state.lastError = nil
+        onURLChanged?(displayURL)
+        onTitleChanged?(title)
+        webView.loadHTMLString(html, baseURL: baseURL)
     }
 
     func goBack() {
@@ -208,6 +257,29 @@ final class BrowserView: NSView {
         return true
     }
 
+    func scrollPreviewBy(dx: CGFloat, dy: CGFloat) {
+        runPreviewJavaScript("window.frosttyPreview?.scrollBy(\(dx), \(dy));")
+    }
+
+    func scrollPreviewToTop() {
+        runPreviewJavaScript("window.frosttyPreview?.scrollToTop();")
+    }
+
+    func scrollPreviewToBottom() {
+        runPreviewJavaScript("window.frosttyPreview?.scrollToBottom();")
+    }
+
+    func runPreviewJavaScript(_ script: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.webView.window != nil, !self.state.isLoading else { return }
+            self.webView.evaluateJavaScript(script) { _, error in
+                if let error {
+                    browserViewLogger.debug("Preview JavaScript failed: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
     func evaluateJavaScript(_ script: String) async throws -> String {
         let result: Any?
         if script.contains("await") {
@@ -233,6 +305,18 @@ final class BrowserView: NSView {
         }
 
         return pngData
+    }
+
+    private func setPreviewBridgeEnabled(_ enabled: Bool) {
+        let controller = webView.configuration.userContentController
+        if enabled {
+            guard !previewBridgeInstalled else { return }
+            controller.add(previewMessageHandler, name: "frosttyPreview")
+            previewBridgeInstalled = true
+        } else if previewBridgeInstalled {
+            controller.removeScriptMessageHandler(forName: "frosttyPreview")
+            previewBridgeInstalled = false
+        }
     }
 }
 
@@ -297,13 +381,7 @@ extension BrowserView: WKNavigationDelegate {
         state.isLoading = true
         state.canGoBack = webView.canGoBack
         state.canGoForward = webView.canGoForward
-        state.title = webView.title ?? state.url.host ?? state.url.absoluteString
-        onTitleChanged?(state.title)
-
-        if let currentURL = webView.url {
-            state.url = currentURL
-            onURLChanged?(currentURL)
-        }
+        syncDisplayState(with: webView)
 
         onNavigationCommit?()
     }
@@ -321,13 +399,7 @@ extension BrowserView: WKNavigationDelegate {
         state.isLoading = false
         state.canGoBack = webView.canGoBack
         state.canGoForward = webView.canGoForward
-        state.title = webView.title ?? state.url.host ?? state.url.absoluteString
-        onTitleChanged?(state.title)
-
-        if let currentURL = webView.url {
-            state.url = currentURL
-            onURLChanged?(currentURL)
-        }
+        syncDisplayState(with: webView)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
@@ -367,6 +439,24 @@ extension BrowserView: WKNavigationDelegate {
         if let urlError = error as? URLError, urlError.code == .cancelled { return true }
         let ns = error as NSError
         return ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled
+    }
+
+    private func syncDisplayState(with webView: WKWebView) {
+        if let customDocumentLoadState {
+            state.title = customDocumentLoadState.title
+            state.url = customDocumentLoadState.displayURL
+            onTitleChanged?(customDocumentLoadState.title)
+            onURLChanged?(customDocumentLoadState.displayURL)
+            return
+        }
+
+        state.title = webView.title ?? state.url.host ?? state.url.absoluteString
+        onTitleChanged?(state.title)
+
+        if let currentURL = webView.url {
+            state.url = currentURL
+            onURLChanged?(currentURL)
+        }
     }
 }
 

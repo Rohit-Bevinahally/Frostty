@@ -15,6 +15,7 @@ final class Tab: Identifiable {
     var usesCustomTitle: Bool = false
     var splitTree: SplitTree
     var isPaneMaximized: Bool
+    var markdownPreviewSourcePath: String?
     let registry: SurfaceRegistry
 
     /// Tab bar / window chrome label: prefers `tab.title`; when empty, uses the focused pane’s title from `SurfaceRegistry` (Ghostty `SET_TITLE` / browser state).
@@ -50,6 +51,7 @@ final class Tab: Identifiable {
         usesCustomTitle: Bool = false,
         splitTree: SplitTree = SplitTree(),
         isPaneMaximized: Bool = false,
+        markdownPreviewSourcePath: String? = nil,
         registry: SurfaceRegistry = SurfaceRegistry()
     ) {
         self.id = id
@@ -58,6 +60,7 @@ final class Tab: Identifiable {
         self.usesCustomTitle = usesCustomTitle
         self.splitTree = splitTree
         self.isPaneMaximized = isPaneMaximized
+        self.markdownPreviewSourcePath = markdownPreviewSourcePath
         self.registry = registry
     }
 }

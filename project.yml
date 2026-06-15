@@ -67,6 +67,18 @@ targets:
       - framework: GhosttyKit.xcframework
         embed: false
 
+  FrosttyTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - FrosttyTests
+    dependencies:
+      - target: Frostty
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: Frostty-Bridging-Header.h
+
 schemes:
   Frostty:
     build:
@@ -74,6 +86,9 @@ schemes:
         Frostty: all
     run:
       config: Debug
+    test:
+      targets:
+        - FrosttyTests
 
 fileGroups:
   - Frostty-Bridging-Header.h

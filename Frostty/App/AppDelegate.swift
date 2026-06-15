@@ -13,6 +13,8 @@ private let logger = Logger(subsystem: "com.frostty.terminal", category: "AppDel
 class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var appSession = AppSession()
     private(set) var browserTabBroker = BrowserTabBroker()
+    private(set) var frosttyActionBroker = FrosttyActionBroker()
+    private(set) var frosttyActionRegistry = FrosttyActionRegistry()
     private var windowControllers: [FrosttyWindowController] = []
 
     var allWindowControllers: [FrosttyWindowController] {
@@ -55,6 +57,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         BrowserServer.shared.toolHandler = BrowserToolHandler(broker: browserTabBroker)
         BrowserServer.shared.start()
 
+        frosttyActionBroker.appDelegate = self
+        registerFrosttyActions()
+        FrosttyActionServer.shared.registry = frosttyActionRegistry
+        FrosttyActionServer.shared.broker = frosttyActionBroker
+        FrosttyActionServer.shared.start()
+
         createInitialWindow()
     }
 
@@ -86,7 +94,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         BrowserServer.shared.stop()
+        FrosttyActionServer.shared.stop()
         windowControllers.removeAll()
+    }
+
+    private func registerFrosttyActions() {
+        MarkdownPreviewAction.register(in: frosttyActionRegistry, broker: frosttyActionBroker)
     }
 
     func applicationDidChangeOcclusionState(_ notification: Notification) {

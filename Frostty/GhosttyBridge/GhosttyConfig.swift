@@ -139,6 +139,27 @@ final class GhosttyConfigManager {
         return found ? color : nil
     }
 
+    func paletteColor(at index: Int) -> NSColor? {
+        guard let cfg = config, (0..<256).contains(index) else { return nil }
+        var palette = ghostty_config_palette_s()
+        let found = "palette".withCString { ptr in
+            GhosttyFFI.configGet(cfg, &palette, ptr, 7)
+        }
+        guard found else { return nil }
+        return withUnsafeBytes(of: palette.colors) { raw in
+            guard let base = raw.baseAddress?.assumingMemoryBound(to: ghostty_config_color_s.self) else {
+                return nil
+            }
+            let color = base[index]
+            return NSColor(
+                red: CGFloat(color.r) / 255.0,
+                green: CGFloat(color.g) / 255.0,
+                blue: CGFloat(color.b) / 255.0,
+                alpha: 1.0
+            )
+        }
+    }
+
     func get<T>(_ key: String, value: inout T) -> Bool {
         guard let cfg = config else { return false }
         return key.withCString { ptr in

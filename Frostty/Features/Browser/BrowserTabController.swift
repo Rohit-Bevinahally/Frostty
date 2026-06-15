@@ -42,6 +42,22 @@ final class BrowserTabController {
         browserView.focus(in: window)
     }
 
+    func scrollPreviewBy(dx: Double, dy: Double) {
+        browserView.scrollPreviewBy(dx: CGFloat(dx), dy: CGFloat(dy))
+    }
+
+    func scrollPreviewToTop() {
+        browserView.scrollPreviewToTop()
+    }
+
+    func scrollPreviewToBottom() {
+        browserView.scrollPreviewToBottom()
+    }
+
+    func runPreviewJavaScript(_ script: String) {
+        browserView.runPreviewJavaScript(script)
+    }
+
     func evaluateJavaScript(_ script: String) async throws -> String {
         try await browserView.evaluateJavaScript(script)
     }
@@ -68,6 +84,21 @@ final class BrowserTabController {
 
     func setSuspended(_ suspended: Bool) {
         browserView.setSuspended(suspended)
+    }
+
+    func loadHTMLString(_ html: String, baseURL: URL? = nil, displayURL: URL, title: String, enablePreviewBridge: Bool = false) {
+        browserView.loadHTMLString(
+            html,
+            baseURL: baseURL,
+            displayURL: displayURL,
+            title: title,
+            enablePreviewBridge: enablePreviewBridge
+        )
+    }
+
+    var onPreviewBridgeMessage: (@MainActor (String) -> Void)? {
+        get { browserView.onPreviewBridgeMessage }
+        set { browserView.onPreviewBridgeMessage = newValue }
     }
 
     deinit {

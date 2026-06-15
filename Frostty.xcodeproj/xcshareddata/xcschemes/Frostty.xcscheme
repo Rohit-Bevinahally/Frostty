@@ -39,7 +39,19 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "3471DEFDFDE29D5A9E897EF8"
+               BuildableName = "FrosttyTests.xctest"
+               BlueprintName = "FrosttyTests"
+               ReferencedContainer = "container:Frostty.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

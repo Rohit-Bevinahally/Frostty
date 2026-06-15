@@ -9,10 +9,13 @@
 /* Begin PBXBuildFile section */
 		010B2ED011450841882CB09A /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC1C750C9ED868902A93F0F /* TabBarView.swift */; };
 		013BB0D2B1067BD9F9698762 /* SurfaceRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9A858D42E983B719C4EE78 /* SurfaceRegistry.swift */; };
+		078F9CB811A15A7BE9D7E2B9 /* MarkdownPreviewAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9947244A05E28D9EE64AC814 /* MarkdownPreviewAction.swift */; };
+		0AA17A1BC00B9B494D1FBE14 /* FrosttyActionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AED7F46B476CFDAD614472 /* FrosttyActionRegistry.swift */; };
 		0D5663F98C28148D1CFA0B7B /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1C08E43E6A2CA2FD0353F60 /* Tab.swift */; };
 		0D5E5B655DCEADFA9618CDA0 /* BrowserTabBroker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF4FF54CF98A611449EB62D /* BrowserTabBroker.swift */; };
 		0EAC8AB8311301628270E7B2 /* SplitTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 163BE035DD8356325BD53514 /* SplitTree.swift */; };
 		11F042ADFF5046B9C0CC135B /* NewWorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8BB83189481E8C037237509 /* NewWorkspaceSheet.swift */; };
+		166894BEC56D1F913F265E2D /* MarkdownPreviewDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB1CFB10D55B7557F140FA95 /* MarkdownPreviewDocument.swift */; };
 		19278A0B73D765A44A0ECD24 /* WindowSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 298E3E59D0D5067831EAA19A /* WindowSession.swift */; };
 		199593384FC4E46191AEB84A /* GhosttyFFI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0919F243D39A9055543897 /* GhosttyFFI.swift */; };
 		1E4053AFA3F2E6CA019A3F42 /* BrowserToolHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9327CB20572568F4B7514664 /* BrowserToolHandler.swift */; };
@@ -20,43 +23,76 @@
 		287B9907A1E97DA5462B987E /* SplitDividerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */; };
 		28AF7AB2B48992623A91A664 /* SurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */; };
 		2C4D14F22B2D6757E0D75635 /* WorkingDirectoryField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE36B15AE74260F554CF552 /* WorkingDirectoryField.swift */; };
+		2F01E5C268A73AD77B22FE95 /* MarkdownPreviewShortcutContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C864498850CDFE680778416E /* MarkdownPreviewShortcutContext.swift */; };
 		2F1D2B4CD2212785F9959B05 /* ShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */; };
 		3440A6F6681D0907B275B076 /* BrowserAddressResolution.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91F3E9524B9AE8791338AA79 /* BrowserAddressResolution.swift */; };
+		39EA8B2E401902DD95E32E40 /* MarkdownPreviewSearchShortcutContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EAFCB47491C65925DD912F /* MarkdownPreviewSearchShortcutContext.swift */; };
 		4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */; };
+		471E5BF10437586EDA42F76B /* FrosttyActionDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E476BDF81099D49439B3F5 /* FrosttyActionDefinition.swift */; };
 		498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51514732293A8D67475BF38D /* EventTranslator.swift */; };
 		4E93F54C94B3F282CCDC8053 /* BrowserAutomation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */; };
+		5163AE6447A4F1A8CAD54772 /* ShortcutContexts.md in Resources */ = {isa = PBXBuildFile; fileRef = 2A98459F2442559B2B1E75F6 /* ShortcutContexts.md */; };
+		5555034D1CC24190C88A608F /* Actions.md in Resources */ = {isa = PBXBuildFile; fileRef = 6722D28C2744FC3FC2CA6DD9 /* Actions.md */; };
 		58ACD4B61AF6785D99CBCCA4 /* MainContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D0BA29DAA133631BF1D865E /* MainContentView.swift */; };
 		58CC87D743CDCB718C20BF28 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFADF2843DFBBF2B13FFC0B /* Workspace.swift */; };
 		5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */; };
 		63D3F45F212D9F5A12ABBACD /* GhosttyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249A632020C8B497F269BFA7 /* GhosttyApp.swift */; };
 		7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57652394DF6F43C2D5546861 /* SidebarView.swift */; };
 		7825D1BCEAE4BC1142461CA1 /* BrowserServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955A6D4490E384DAC90489 /* BrowserServer.swift */; };
+		7BF8F9B7E6AFF767EB8FBEAC /* FrosttyActionServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55489CC3D13E342270C593D /* FrosttyActionServerTests.swift */; };
 		7D3E40B275F372A5A6AC79F8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */; };
+		806923964F146A7EF596D511 /* FrosttyActionParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23885FBCB82C028C98B3AD4 /* FrosttyActionParserTests.swift */; };
+		90D4A4AE6DF4EB615BCBE4A2 /* KeyEventIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5CC61B73578C11607AA3FA9 /* KeyEventIdentity.swift */; };
 		92614F6F15FA239915D5CB7D /* SurfaceScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */; };
 		93C4ECD07F01D7E152A57E8D /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564B0320DEC8F58C135FA1EF /* BrowserView.swift */; };
 		943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */; };
+		965628C265899F0B45A1A444 /* preview-gallery.md in Resources */ = {isa = PBXBuildFile; fileRef = 03A51C1077D6527D3B0042AB /* preview-gallery.md */; };
 		9AC9419FDF40538A8CBBC8C9 /* BrowserState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9EA7EE2E09697D636D860D /* BrowserState.swift */; };
+		A0653ECC3B0158A5D5782BBC /* MarkdownPreviewSupportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FFDBD40A7617BBAFFE3005 /* MarkdownPreviewSupportTests.swift */; };
+		A1124AF4AA6E6EF53AFC2D91 /* ShortcutContextController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB17DD3657CAED1DC10E635 /* ShortcutContextController.swift */; };
+		A301FBA98C00EA37A4A7611F /* FrosttyActionBroker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCD3E29807288DB08B5046E3 /* FrosttyActionBroker.swift */; };
 		A365C789DD0DB91E3EDC585B /* SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */; };
+		B63B37643C34E6E1EAC00AC0 /* ShortcutContextControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F6CD83932BA495ED2E1BCD /* ShortcutContextControllerTests.swift */; };
 		B6CCE5D5AEBA34A2EBDC1115 /* BrowserSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FA2B164D0E6C1005CCE997 /* BrowserSecurity.swift */; };
 		B85D100DD9E1EAEB16C6C577 /* GhosttyConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */; };
+		BBC9471ABC3DCDD1CE3434D8 /* MarkdownPreviewOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA279EE7A5196117F88FA04C /* MarkdownPreviewOverlayView.swift */; };
+		BC2ACE147A23E5670A6649F0 /* MarkdownPreviewDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD72BD95BECFA4A7EFFA2DA4 /* MarkdownPreviewDocumentTests.swift */; };
+		BF5EDC762F03220B1275DB90 /* MarkdownPreviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B482372AAB0E2962EEE5E81 /* MarkdownPreviewSession.swift */; };
+		C6AC9AA77291750B7AE2E11A /* MarkdownPreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA34BACC30812CE87CFAF263 /* MarkdownPreviewSupport.swift */; };
 		CE18A4587B46694135B4692B /* BrowserPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F752769A958E669C0058CD /* BrowserPaneView.swift */; };
+		D330926AB641A793B0972BD4 /* MarkdownPreview.md in Resources */ = {isa = PBXBuildFile; fileRef = 0629FB89BEC08B3F70A699F9 /* MarkdownPreview.md */; };
+		DDD7E7277AAEF95339D3FE73 /* FrosttyActionServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 679CA1E1099BE06703A85457 /* FrosttyActionServer.swift */; };
 		DF831D97EE4AEF881B180695 /* BrowserContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1156E0EC31CA090E431B6836 /* BrowserContainerView.swift */; };
 		E23D63953F5B18BBFACBDE6C /* PaneDragChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722071154EFF3E60609C511D /* PaneDragChrome.swift */; };
 		E56256BA673A2677328B6A9E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = C901E4BB3502A7E1787E7B48 /* main.swift */; };
+		E69D65E7ECCA992F7A4DFF9C /* FrosttyActionParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BEB0DE22C477DCB9F51767 /* FrosttyActionParser.swift */; };
 		E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */; };
 		E90C34FD17CCA6A5F14F2A87 /* GhosttyAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */; };
 		E924CD8B00C535769AAC7B28 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0DAA01E8CBB55FF2E4FF73 /* AppSession.swift */; };
 		ED0A0F75B0BE8A9632FE0105 /* SplitContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */; };
 		F19348401E1AB97EE75EF7C3 /* BrowserTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 753D2B2CA2C0975F998C1922 /* BrowserTabController.swift */; };
+		F68EA7C7AD8EBAE7E28FAE8A /* MarkdownPreviewCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FCA9583DBC851F0A9F4DC2A /* MarkdownPreviewCoordinator.swift */; };
 		F8CAEC60CF55F9E567364B84 /* HTTPParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62072F0C657591D9AC84236D /* HTTPParser.swift */; };
 		F97C15B1378F19A82641B35C /* GhosttyKit.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9645B2623F21205017E12947 /* GhosttyKit.xcframework */; };
 		F9B4E042D3557910AF51A62F /* BrowserAutomationError.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F05B73511114A62D3A1AB4 /* BrowserAutomationError.swift */; };
 		FD7567AC79A5498BBDD360A2 /* FrosttyNotificationNames.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE86AADA74BD2DD5A562FF2 /* FrosttyNotificationNames.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2D07AECDB1F656B838C59C1C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 67E69C2EAC8CC3C9773443FC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FD0683A5ABE98E7C6EB8DE63;
+			remoteInfo = Frostty;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		024F353AA290B8E724CD46A3 /* Frostty-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Frostty-Bridging-Header.h"; sourceTree = "<group>"; };
 		026C03BE28432D9A4F7B01A8 /* GhosttyConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyConfig.swift; sourceTree = "<group>"; };
+		03A51C1077D6527D3B0042AB /* preview-gallery.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "preview-gallery.md"; sourceTree = "<group>"; };
+		0629FB89BEC08B3F70A699F9 /* MarkdownPreview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MarkdownPreview.md; sourceTree = "<group>"; };
 		1156E0EC31CA090E431B6836 /* BrowserContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserContainerView.swift; sourceTree = "<group>"; };
 		163BE035DD8356325BD53514 /* SplitTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTree.swift; sourceTree = "<group>"; };
 		1A533F69EDCA9EE8D186AA90 /* GhosttyAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyAction.swift; sourceTree = "<group>"; };
@@ -66,41 +102,64 @@
 		249A632020C8B497F269BFA7 /* GhosttyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyApp.swift; sourceTree = "<group>"; };
 		298E3E59D0D5067831EAA19A /* WindowSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSession.swift; sourceTree = "<group>"; };
 		2A6165801BFF45A91EC7329B /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		2A98459F2442559B2B1E75F6 /* ShortcutContexts.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ShortcutContexts.md; sourceTree = "<group>"; };
 		2BF4FF54CF98A611449EB62D /* BrowserTabBroker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabBroker.swift; sourceTree = "<group>"; };
 		3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAutomation.swift; sourceTree = "<group>"; };
+		3FCA9583DBC851F0A9F4DC2A /* MarkdownPreviewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewCoordinator.swift; sourceTree = "<group>"; };
 		51514732293A8D67475BF38D /* EventTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTranslator.swift; sourceTree = "<group>"; };
 		5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitDividerView.swift; sourceTree = "<group>"; };
 		55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindowController.swift; sourceTree = "<group>"; };
 		564B0320DEC8F58C135FA1EF /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		57652394DF6F43C2D5546861 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		62072F0C657591D9AC84236D /* HTTPParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPParser.swift; sourceTree = "<group>"; };
+		62EAFCB47491C65925DD912F /* MarkdownPreviewSearchShortcutContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewSearchShortcutContext.swift; sourceTree = "<group>"; };
+		6722D28C2744FC3FC2CA6DD9 /* Actions.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Actions.md; sourceTree = "<group>"; };
+		679CA1E1099BE06703A85457 /* FrosttyActionServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionServer.swift; sourceTree = "<group>"; };
 		722071154EFF3E60609C511D /* PaneDragChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaneDragChrome.swift; sourceTree = "<group>"; };
 		7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		753D2B2CA2C0975F998C1922 /* BrowserTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabController.swift; sourceTree = "<group>"; };
 		75FA2B164D0E6C1005CCE997 /* BrowserSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSecurity.swift; sourceTree = "<group>"; };
 		7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceView.swift; sourceTree = "<group>"; };
+		7B482372AAB0E2962EEE5E81 /* MarkdownPreviewSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewSession.swift; sourceTree = "<group>"; };
 		7F0919F243D39A9055543897 /* GhosttyFFI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyFFI.swift; sourceTree = "<group>"; };
+		83FFDBD40A7617BBAFFE3005 /* MarkdownPreviewSupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewSupportTests.swift; sourceTree = "<group>"; };
 		91F3E9524B9AE8791338AA79 /* BrowserAddressResolution.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAddressResolution.swift; sourceTree = "<group>"; };
 		9327CB20572568F4B7514664 /* BrowserToolHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserToolHandler.swift; sourceTree = "<group>"; };
 		9645B2623F21205017E12947 /* GhosttyKit.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = GhosttyKit.xcframework; sourceTree = "<group>"; };
+		9947244A05E28D9EE64AC814 /* MarkdownPreviewAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewAction.swift; sourceTree = "<group>"; };
 		9D0BA29DAA133631BF1D865E /* MainContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainContentView.swift; sourceTree = "<group>"; };
 		A1C08E43E6A2CA2FD0353F60 /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
+		A55489CC3D13E342270C593D /* FrosttyActionServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionServerTests.swift; sourceTree = "<group>"; };
+		A6AED7F46B476CFDAD614472 /* FrosttyActionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionRegistry.swift; sourceTree = "<group>"; };
 		A8BB83189481E8C037237509 /* NewWorkspaceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewWorkspaceSheet.swift; sourceTree = "<group>"; };
+		AAB17DD3657CAED1DC10E635 /* ShortcutContextController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutContextController.swift; sourceTree = "<group>"; };
 		B2F752769A958E669C0058CD /* BrowserPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPaneView.swift; sourceTree = "<group>"; };
 		B5AAF6C1F4FEB997912D3392 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B8F03A27C2EEFB939D9084E7 /* FrosttyWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindow.swift; sourceTree = "<group>"; };
+		B8F6CD83932BA495ED2E1BCD /* ShortcutContextControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutContextControllerTests.swift; sourceTree = "<group>"; };
 		B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutManager.swift; sourceTree = "<group>"; };
+		BA34BACC30812CE87CFAF263 /* MarkdownPreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewSupport.swift; sourceTree = "<group>"; };
 		C3816052819BF7C9235AF2A7 /* SplitContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitContainerView.swift; sourceTree = "<group>"; };
+		C3BEB0DE22C477DCB9F51767 /* FrosttyActionParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionParser.swift; sourceTree = "<group>"; };
+		C864498850CDFE680778416E /* MarkdownPreviewShortcutContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewShortcutContext.swift; sourceTree = "<group>"; };
 		C901E4BB3502A7E1787E7B48 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		CCD3E29807288DB08B5046E3 /* FrosttyActionBroker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionBroker.swift; sourceTree = "<group>"; };
+		CD72BD95BECFA4A7EFFA2DA4 /* MarkdownPreviewDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewDocumentTests.swift; sourceTree = "<group>"; };
 		CEE86AADA74BD2DD5A562FF2 /* FrosttyNotificationNames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyNotificationNames.swift; sourceTree = "<group>"; };
 		CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttySurface.swift; sourceTree = "<group>"; };
 		D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceScrollView.swift; sourceTree = "<group>"; };
+		D5CC61B73578C11607AA3FA9 /* KeyEventIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEventIdentity.swift; sourceTree = "<group>"; };
 		D7955A6D4490E384DAC90489 /* BrowserServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserServer.swift; sourceTree = "<group>"; };
+		E5CE9AE351C914724483E199 /* FrosttyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FrosttyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9E476BDF81099D49439B3F5 /* FrosttyActionDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionDefinition.swift; sourceTree = "<group>"; };
 		EA9EA7EE2E09697D636D860D /* BrowserState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserState.swift; sourceTree = "<group>"; };
 		EEA4DA5D02A3449C5C04082D /* SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBarView.swift; sourceTree = "<group>"; };
 		EEC1C750C9ED868902A93F0F /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		F23885FBCB82C028C98B3AD4 /* FrosttyActionParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyActionParserTests.swift; sourceTree = "<group>"; };
 		F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokyoNight.swift; sourceTree = "<group>"; };
 		F6F05B73511114A62D3A1AB4 /* BrowserAutomationError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAutomationError.swift; sourceTree = "<group>"; };
+		FA279EE7A5196117F88FA04C /* MarkdownPreviewOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewOverlayView.swift; sourceTree = "<group>"; };
+		FB1CFB10D55B7557F140FA95 /* MarkdownPreviewDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewDocument.swift; sourceTree = "<group>"; };
 		FB9A858D42E983B719C4EE78 /* SurfaceRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceRegistry.swift; sourceTree = "<group>"; };
 		FE0DAA01E8CBB55FF2E4FF73 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -144,6 +203,20 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		0A5B74AEFD2728774032B6CB /* Actions */ = {
+			isa = PBXGroup;
+			children = (
+				6722D28C2744FC3FC2CA6DD9 /* Actions.md */,
+				CCD3E29807288DB08B5046E3 /* FrosttyActionBroker.swift */,
+				E9E476BDF81099D49439B3F5 /* FrosttyActionDefinition.swift */,
+				C3BEB0DE22C477DCB9F51767 /* FrosttyActionParser.swift */,
+				A6AED7F46B476CFDAD614472 /* FrosttyActionRegistry.swift */,
+				679CA1E1099BE06703A85457 /* FrosttyActionServer.swift */,
+				E3538F68F45498702BDEF698 /* Actions */,
+			);
+			path = Actions;
+			sourceTree = "<group>";
+		};
 		0E282736EF8E7032BB444116 /* Surface */ = {
 			isa = PBXGroup;
 			children = (
@@ -167,6 +240,14 @@
 			path = MainWindow;
 			sourceTree = "<group>";
 		};
+		5BFF36B8900A783919B97D13 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				03A51C1077D6527D3B0042AB /* preview-gallery.md */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
 		5DB9CC61FF314BA7CEF37239 /* Browser */ = {
 			isa = PBXGroup;
 			children = (
@@ -176,11 +257,20 @@
 			path = Browser;
 			sourceTree = "<group>";
 		};
+		5E42DBD3C3B6B039E208983D /* MarkdownPreview */ = {
+			isa = PBXGroup;
+			children = (
+				FA279EE7A5196117F88FA04C /* MarkdownPreviewOverlayView.swift */,
+			);
+			path = MarkdownPreview;
+			sourceTree = "<group>";
+		};
 		63561B2ABA96366315280DD9 = {
 			isa = PBXGroup;
 			children = (
 				024F353AA290B8E724CD46A3 /* Frostty-Bridging-Header.h */,
 				B4B3CD23A429EF54BE63B017 /* Frostty */,
+				DCACB7B4090A61FEA460F31F /* FrosttyTests */,
 				DD80E1FC41EB5ACE3418175B /* Frameworks */,
 				C24F64A5387C9B0A325A7852 /* Products */,
 			);
@@ -199,6 +289,7 @@
 			children = (
 				5DB9CC61FF314BA7CEF37239 /* Browser */,
 				10D0B08F1C66ED59E2A80CFA /* MainWindow */,
+				5E42DBD3C3B6B039E208983D /* MarkdownPreview */,
 				ED3040B3A399DBD91162555F /* Sidebar */,
 				0E282736EF8E7032BB444116 /* Surface */,
 				F4E7298C7B4FBF222B2ABA33 /* TabBar */,
@@ -222,6 +313,9 @@
 		950323C542788B3E75FE57D7 /* Input */ = {
 			isa = PBXGroup;
 			children = (
+				D5CC61B73578C11607AA3FA9 /* KeyEventIdentity.swift */,
+				AAB17DD3657CAED1DC10E635 /* ShortcutContextController.swift */,
+				2A98459F2442559B2B1E75F6 /* ShortcutContexts.md */,
 				B9EF58BF6792C0CA897678AC /* ShortcutManager.swift */,
 			);
 			path = Input;
@@ -230,8 +324,10 @@
 		A138A296457F36F6B33E148F /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				0A5B74AEFD2728774032B6CB /* Actions */,
 				01195010A3B8F441E08CAB1C /* Browser */,
 				F18EEFBF48C2BD3ED8BB54DF /* IPC */,
+				FD47DED42E2BBFCABFAA277D /* MarkdownPreview */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -255,8 +351,21 @@
 			isa = PBXGroup;
 			children = (
 				232E5CF0BAEABCB0857D65CC /* Frostty.app */,
+				E5CE9AE351C914724483E199 /* FrosttyTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		DCACB7B4090A61FEA460F31F /* FrosttyTests */ = {
+			isa = PBXGroup;
+			children = (
+				F23885FBCB82C028C98B3AD4 /* FrosttyActionParserTests.swift */,
+				A55489CC3D13E342270C593D /* FrosttyActionServerTests.swift */,
+				CD72BD95BECFA4A7EFFA2DA4 /* MarkdownPreviewDocumentTests.swift */,
+				83FFDBD40A7617BBAFFE3005 /* MarkdownPreviewSupportTests.swift */,
+				B8F6CD83932BA495ED2E1BCD /* ShortcutContextControllerTests.swift */,
+			);
+			path = FrosttyTests;
 			sourceTree = "<group>";
 		};
 		DD80E1FC41EB5ACE3418175B /* Frameworks */ = {
@@ -265,6 +374,14 @@
 				9645B2623F21205017E12947 /* GhosttyKit.xcframework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E3538F68F45498702BDEF698 /* Actions */ = {
+			isa = PBXGroup;
+			children = (
+				9947244A05E28D9EE64AC814 /* MarkdownPreviewAction.swift */,
+			);
+			path = Actions;
 			sourceTree = "<group>";
 		};
 		ED3040B3A399DBD91162555F /* Sidebar */ = {
@@ -307,14 +424,46 @@
 			path = TabBar;
 			sourceTree = "<group>";
 		};
+		FD47DED42E2BBFCABFAA277D /* MarkdownPreview */ = {
+			isa = PBXGroup;
+			children = (
+				0629FB89BEC08B3F70A699F9 /* MarkdownPreview.md */,
+				3FCA9583DBC851F0A9F4DC2A /* MarkdownPreviewCoordinator.swift */,
+				FB1CFB10D55B7557F140FA95 /* MarkdownPreviewDocument.swift */,
+				62EAFCB47491C65925DD912F /* MarkdownPreviewSearchShortcutContext.swift */,
+				7B482372AAB0E2962EEE5E81 /* MarkdownPreviewSession.swift */,
+				C864498850CDFE680778416E /* MarkdownPreviewShortcutContext.swift */,
+				BA34BACC30812CE87CFAF263 /* MarkdownPreviewSupport.swift */,
+				5BFF36B8900A783919B97D13 /* Fixtures */,
+			);
+			path = MarkdownPreview;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3471DEFDFDE29D5A9E897EF8 /* FrosttyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 61699797AB873E2998259B9E /* Build configuration list for PBXNativeTarget "FrosttyTests" */;
+			buildPhases = (
+				0361CF118021E19A96B35A1C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FFF64669B90AD78CF5BB6C50 /* PBXTargetDependency */,
+			);
+			name = FrosttyTests;
+			productName = FrosttyTests;
+			productReference = E5CE9AE351C914724483E199 /* FrosttyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		FD0683A5ABE98E7C6EB8DE63 /* Frostty */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A1848913AD474E851485644A /* Build configuration list for PBXNativeTarget "Frostty" */;
 			buildPhases = (
 				AADDBDBA8F3E508DD06D99FE /* Sources */,
+				477F6E4D89330A285E45C8E9 /* Resources */,
 				20B293DA5936EF89D31DF596 /* Frameworks */,
 				77BE21FAE1AEDCBEA10D2D1F /* Copy Ghostty Resources */,
 			);
@@ -355,9 +504,24 @@
 			projectRoot = "";
 			targets = (
 				FD0683A5ABE98E7C6EB8DE63 /* Frostty */,
+				3471DEFDFDE29D5A9E897EF8 /* FrosttyTests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		477F6E4D89330A285E45C8E9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5555034D1CC24190C88A608F /* Actions.md in Resources */,
+				D330926AB641A793B0972BD4 /* MarkdownPreview.md in Resources */,
+				5163AE6447A4F1A8CAD54772 /* ShortcutContexts.md in Resources */,
+				965628C265899F0B45A1A444 /* preview-gallery.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		77BE21FAE1AEDCBEA10D2D1F /* Copy Ghostty Resources */ = {
@@ -381,6 +545,18 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0361CF118021E19A96B35A1C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				806923964F146A7EF596D511 /* FrosttyActionParserTests.swift in Sources */,
+				7BF8F9B7E6AFF767EB8FBEAC /* FrosttyActionServerTests.swift in Sources */,
+				BC2ACE147A23E5670A6649F0 /* MarkdownPreviewDocumentTests.swift in Sources */,
+				A0653ECC3B0158A5D5782BBC /* MarkdownPreviewSupportTests.swift in Sources */,
+				B63B37643C34E6E1EAC00AC0 /* ShortcutContextControllerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AADDBDBA8F3E508DD06D99FE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -401,6 +577,11 @@
 				93C4ECD07F01D7E152A57E8D /* BrowserView.swift in Sources */,
 				22804567D1D916C659EE57B1 /* DownloadManager.swift in Sources */,
 				498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */,
+				A301FBA98C00EA37A4A7611F /* FrosttyActionBroker.swift in Sources */,
+				471E5BF10437586EDA42F76B /* FrosttyActionDefinition.swift in Sources */,
+				E69D65E7ECCA992F7A4DFF9C /* FrosttyActionParser.swift in Sources */,
+				0AA17A1BC00B9B494D1FBE14 /* FrosttyActionRegistry.swift in Sources */,
+				DDD7E7277AAEF95339D3FE73 /* FrosttyActionServer.swift in Sources */,
 				FD7567AC79A5498BBDD360A2 /* FrosttyNotificationNames.swift in Sources */,
 				E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */,
 				943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */,
@@ -410,10 +591,20 @@
 				199593384FC4E46191AEB84A /* GhosttyFFI.swift in Sources */,
 				4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */,
 				F8CAEC60CF55F9E567364B84 /* HTTPParser.swift in Sources */,
+				90D4A4AE6DF4EB615BCBE4A2 /* KeyEventIdentity.swift in Sources */,
 				58ACD4B61AF6785D99CBCCA4 /* MainContentView.swift in Sources */,
+				078F9CB811A15A7BE9D7E2B9 /* MarkdownPreviewAction.swift in Sources */,
+				F68EA7C7AD8EBAE7E28FAE8A /* MarkdownPreviewCoordinator.swift in Sources */,
+				166894BEC56D1F913F265E2D /* MarkdownPreviewDocument.swift in Sources */,
+				BBC9471ABC3DCDD1CE3434D8 /* MarkdownPreviewOverlayView.swift in Sources */,
+				39EA8B2E401902DD95E32E40 /* MarkdownPreviewSearchShortcutContext.swift in Sources */,
+				BF5EDC762F03220B1275DB90 /* MarkdownPreviewSession.swift in Sources */,
+				2F01E5C268A73AD77B22FE95 /* MarkdownPreviewShortcutContext.swift in Sources */,
+				C6AC9AA77291750B7AE2E11A /* MarkdownPreviewSupport.swift in Sources */,
 				11F042ADFF5046B9C0CC135B /* NewWorkspaceSheet.swift in Sources */,
 				E23D63953F5B18BBFACBDE6C /* PaneDragChrome.swift in Sources */,
 				A365C789DD0DB91E3EDC585B /* SearchBarView.swift in Sources */,
+				A1124AF4AA6E6EF53AFC2D91 /* ShortcutContextController.swift in Sources */,
 				2F1D2B4CD2212785F9959B05 /* ShortcutManager.swift in Sources */,
 				7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */,
 				ED0A0F75B0BE8A9632FE0105 /* SplitContainerView.swift in Sources */,
@@ -433,6 +624,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FFF64669B90AD78CF5BB6C50 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FD0683A5ABE98E7C6EB8DE63 /* Frostty */;
+			targetProxy = 2D07AECDB1F656B838C59C1C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		10F95B6660DCAA5D0B40B098 /* Debug */ = {
@@ -488,6 +687,24 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Frostty-Bridging-Header.h";
 			};
 			name = Release;
+		};
+		4FF628AB84E62CC4C3D0A946 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.frostty.FrosttyTests;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Frostty-Bridging-Header.h";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Frostty.app/Contents/MacOS/Frostty";
+			};
+			name = Debug;
 		};
 		87ECA87ADB5EBC253CA8C248 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -637,9 +854,36 @@
 			};
 			name = Debug;
 		};
+		D004CE2EA31242EBEFCBDEA0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.frostty.FrosttyTests;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Frostty-Bridging-Header.h";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Frostty.app/Contents/MacOS/Frostty";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		61699797AB873E2998259B9E /* Build configuration list for PBXNativeTarget "FrosttyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4FF628AB84E62CC4C3D0A946 /* Debug */,
+				D004CE2EA31242EBEFCBDEA0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		914C47E09B54507551730FD2 /* Build configuration list for PBXProject "Frostty" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

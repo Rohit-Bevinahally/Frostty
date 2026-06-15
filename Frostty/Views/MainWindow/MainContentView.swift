@@ -8,6 +8,7 @@ import SwiftUI
 
 struct MainContentView: View {
     @Bindable var windowSession: WindowSession
+    @Bindable var markdownPreviewSession: MarkdownPreviewSession
     let splitContainerView: SplitContainerView
     let isPaneResizeMode: Bool
 
@@ -110,8 +111,14 @@ struct MainContentView: View {
                         }
                     }
 
-                    TerminalContainerRepresentable(splitContainerView: splitContainerView)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ZStack {
+                        TerminalContainerRepresentable(splitContainerView: splitContainerView)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                        if markdownPreviewSession.isPresented {
+                            MarkdownPreviewOverlayView(previewSession: markdownPreviewSession)
+                        }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -134,6 +141,7 @@ struct MainContentView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: windowSession.showSidebar)
         .animation(.easeInOut(duration: 0.15), value: isPaneResizeMode)
+        .animation(.easeInOut(duration: 0.18), value: markdownPreviewSession.isPresented)
         .font(GhosttyUIFonts.font(textStyle: .body))
     }
 

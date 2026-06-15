@@ -35,10 +35,8 @@ class FrosttyWindow: NSWindow {
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown,
            let manager = shortcutManager,
-           manager.shouldIntercept(event: event, firstResponder: firstResponder) {
-            if manager.handleEvent(event) {
-                return // Shortcut consumed the event
-            }
+           manager.handleKeyDown(event, firstResponder: firstResponder) {
+            return
         }
         super.sendEvent(event)
     }

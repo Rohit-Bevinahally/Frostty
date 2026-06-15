@@ -20,15 +20,21 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private var closingTabIDs: Set<UUID> = []
     private var focusRequestID: UInt64 = 0
     private var isPaneResizeMode = false
+    private let shortcutContextController = ShortcutContextController()
+    private var markdownPreviewCoordinator: MarkdownPreviewCoordinator!
 
     // MARK: - Computed Properties
 
-    private var activeTab: Tab? {
+    var activeTab: Tab? {
         windowSession.activeWorkspace?.activeTab
     }
 
     private var activeRegistry: SurfaceRegistry? {
         activeTab?.registry
+    }
+
+    private var isMarkdownPreviewCapturingInput: Bool {
+        markdownPreviewCoordinator.isCapturingInput
     }
 
     var preferredUIFontSurface: ghostty_surface_t? {
@@ -119,6 +125,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     init(window: NSWindow, windowSession: WindowSession) {
         self.windowSession = windowSession
         super.init(window: window)
+        markdownPreviewCoordinator = MarkdownPreviewCoordinator(
+            host: self,
+            shortcutContextController: shortcutContextController
+        )
         window.delegate = self
         window.center()
         setupShortcutManager()
@@ -143,6 +153,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private func setupShortcutManager() {
         guard let frosttyWindow = window as? FrosttyWindow else { return }
         let manager = ShortcutManager()
+        manager.contextController = shortcutContextController
+        manager.isSuppressed = { [weak self] in
+            self?.isMarkdownPreviewCapturingInput == true
+        }
 
         // Cmd+S -> toggle sidebar (keyCode 1 = S)
         manager.register(modifiers: [.command], keyCode: 1) { [weak self] in
@@ -231,6 +245,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         // Ctrl+Shift+I -> rename active tab (keyCode 34 = I)
         manager.register(modifiers: [.control, .shift], keyCode: 34) { [weak self] in
             self?.renameActiveTab()
+        }
+        // Alt+P -> toggle markdown preview
+        manager.register(modifiers: [.option], keyCode: 35, allowWhenSuppressed: true) { [weak self] in
+            self?.markdownPreviewCoordinator.toggle()
         }
         // Pane navigation: Ctrl+Shift+H/J/K/L (keyCodes: 4=H, 38=J, 40=K, 37=L)
         manager.register(modifiers: [.control, .shift], keyCode: 4) { [weak self] in
@@ -354,6 +372,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private func buildMainContentView() -> MainContentView {
         MainContentView(
             windowSession: windowSession,
+            markdownPreviewSession: markdownPreviewCoordinator.session,
             splitContainerView: splitContainerView ?? SplitContainerView(registry: SurfaceRegistry()),
             isPaneResizeMode: isPaneResizeMode,
             onTabSelected: { [weak self] tabID in self?.switchToTab(id: tabID) },
@@ -443,6 +462,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     @discardableResult
     private func focusActiveTabImmediately() -> Bool {
+        if isMarkdownPreviewCapturingInput {
+            return markdownPreviewCoordinator.focusImmediately()
+        }
+
         guard let tab = activeTab,
               let focusedID = tab.splitTree.focusedLeafID else {
             return false
@@ -470,6 +493,14 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
         guard window?.isKeyWindow == true else { return }
 
+        if markdownPreviewCoordinator.attemptFocusRestore(elapsed: elapsed, retry: { [weak self] in
+            DispatchQueue.main.async {
+                self?.attemptFocusRestore(requestID: requestID, startTime: startTime)
+            }
+        }) {
+            return
+        }
+
         guard let tab = activeTab,
               let focusedID = tab.splitTree.focusedLeafID,
               let focusView = tab.registry.paneView(for: focusedID) else { return }
@@ -489,13 +520,17 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         _ = tab.registry.makeFirstResponder(for: focusedID, in: window)
     }
 
+
     // MARK: - Tab Activation Helpers
 
     private func activateCurrentTab() {
         guard let tab = activeTab else { return }
 
+        markdownPreviewCoordinator.syncForActiveTab(activeTabID: tab.id)
+
         let visibleIDs = Set(tab.splitTree.allLeafIDs())
         tab.registry.resumeVisible(visibleIDs: visibleIDs)
+
         rebuildSplitContainer()
         updateLayout()
         syncWindowTitleWithFocusedPane(in: tab)
@@ -770,6 +805,15 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         openBrowser(destination: .newTab)
     }
 
+    @objc func toggleMarkdownPreview(_ sender: Any? = nil) {
+        markdownPreviewCoordinator.toggle()
+    }
+
+    @discardableResult
+    func handleMarkdownPreviewAction(path: String?, source: MarkdownPreviewInvocationSource) -> Bool {
+        markdownPreviewCoordinator.handleAction(path: path, source: source)
+    }
+
     private func openBrowser(destination: BrowserOpenDestination) {
         switch destination {
         case .newTab:
@@ -805,6 +849,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
+
     @objc func requestCloseActiveTab(_ sender: Any? = nil) {
         guard let tabID = activeTab?.id else { return }
         requestCloseTab(id: tabID)
@@ -838,6 +883,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private func closeTab(id tabID: UUID) {
         guard !closingTabIDs.contains(tabID) else { return }
         guard let (tab, workspace) = tabAndWorkspace(for: tabID) else { return }
+
+        markdownPreviewCoordinator.dismissIfOwnedBy(tabID: tabID)
 
         closingTabIDs.insert(tabID)
 
@@ -1378,6 +1425,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             return nil
         }
 
+        markdownPreviewCoordinator.dismissIfOwnedBy(paneID: sourceID)
+
         let sourceTabWasActive = sourceTab.id == activeTab?.id
         let sourceTabRemoved = sourceTab.splitTree.allLeafIDs().count == 1
 
@@ -1554,6 +1603,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard let surfaceView = notification.object as? SurfaceView else { return }
         guard let (owningTab, owningWorkspace) = findTab(for: surfaceView) else { return }
         guard let surfaceID = owningTab.registry.id(for: surfaceView) else { return }
+
+        markdownPreviewCoordinator.dismissIfOwnedBy(paneID: surfaceID)
 
         let (newTree, focusTarget) = owningTab.splitTree.remove(surfaceID)
         owningTab.registry.destroySurface(surfaceID)
@@ -1736,6 +1787,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func handleSurfaceDidFocus(_ notification: Notification) {
+        if markdownPreviewCoordinator.shouldRestoreFocusFromTerminalOrBrowser() {
+            return
+        }
+
         guard let surfaceView = notification.object as? SurfaceView else { return }
         guard belongsToThisWindow(surfaceView) else { return }
         guard let (tab, _) = findTab(for: surfaceView) else { return }
@@ -1751,6 +1806,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func handleBrowserPaneDidFocus(_ notification: Notification) {
+        if markdownPreviewCoordinator.shouldRestoreFocusFromTerminalOrBrowser() {
+            return
+        }
+
         guard let paneView = notification.object as? BrowserPaneView else { return }
         guard belongsToThisWindow(paneView) else { return }
         guard let (tab, _) = findTab(for: paneView) else { return }
@@ -1863,5 +1922,19 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             appDelegate.removeWindowController(self)
         }
+    }
+}
+
+extension FrosttyWindowController: MarkdownPreviewHost {
+    func markdownPreviewWorkingDirectory(for tab: Tab) -> String? {
+        tab.pwd ?? windowSession.activeWorkspace?.workingDirectory
+    }
+
+    func restoreFocusAfterMarkdownPreview() {
+        restoreFocus()
+    }
+
+    func pauseActiveTabSurfaces() {
+        activeTab?.registry.pauseAll()
     }
 }
