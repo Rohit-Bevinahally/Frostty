@@ -118,8 +118,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func handleNewWindow(_ notification: Notification) {
         // Single window mode: redirect new window requests to creating a workspace
         if let wc = windowControllers.first {
-            let n = wc.windowSession.workspaces.count + 1
-            wc.createNewWorkspace(name: "Workspace \(n)", workingDirectory: nil)
+            wc.requestNewWorkspaceSheet()
         } else {
             createInitialWindow()
         }
@@ -138,9 +137,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func createNewWorkspaceFromMenu() {
-        guard let wc = windowControllers.first else { return }
-        let n = wc.windowSession.workspaces.count + 1
-        wc.createNewWorkspace(name: "Workspace \(n)", workingDirectory: nil)
+        windowControllers.first?.requestNewWorkspaceSheet()
     }
 
     @objc func closeActiveTab(_ sender: Any?) {

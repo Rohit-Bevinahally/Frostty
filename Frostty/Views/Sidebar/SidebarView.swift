@@ -50,6 +50,11 @@ private struct WorkingDirectoryEditorPayload: Identifiable {
     var id: UUID { workspaceID }
 }
 
+private struct NewWorkspaceSheetRequest: Identifiable {
+    let id = UUID()
+    let defaultName: String
+}
+
 private struct EditWorkingDirectorySheet: View {
     let workspaceID: UUID
     @State private var path: String
@@ -141,8 +146,7 @@ struct SidebarView: View {
     @State private var workspaceFrameCache = WorkspaceFrameCache()
     @State private var insertionSlot: Int?
 
-    @State private var showNewWorkspaceSheet = false
-    @State private var newWorkspaceDefaultName = "Workspace"
+    @State private var newWorkspaceSheetRequest: NewWorkspaceSheetRequest?
     @State private var workingDirectoryEditor: WorkingDirectoryEditorPayload?
     @State private var paneDropWorkspaceID: UUID?
     @State private var paneDropInsertionSlot: Int?
@@ -245,10 +249,13 @@ struct SidebarView: View {
                 onWidthChangeEnded: onSidebarWidthChangeEnded
             )
         }
-        .sheet(isPresented: $showNewWorkspaceSheet) {
+        .sheet(item: $newWorkspaceSheetRequest) { request in
             NewWorkspaceSheet(
-                isPresented: $showNewWorkspaceSheet,
-                defaultName: newWorkspaceDefaultName,
+                isPresented: Binding(
+                    get: { newWorkspaceSheetRequest != nil },
+                    set: { if !$0 { newWorkspaceSheetRequest = nil } }
+                ),
+                defaultName: request.defaultName,
                 onCreate: { name, wd in
                     onAddWorkspace?(name, wd) ?? false
                 }
@@ -264,6 +271,15 @@ struct SidebarView: View {
                 onDismiss: { workingDirectoryEditor = nil }
             )
         }
+        .onReceive(NotificationCenter.default.publisher(for: .frosttyShowNewWorkspaceSheet)) { notification in
+            let defaultName = (notification.userInfo?["defaultName"] as? String)
+                ?? defaultNameForNewWorkspace()
+            newWorkspaceSheetRequest = NewWorkspaceSheetRequest(defaultName: defaultName)
+        }
+    }
+
+    private func defaultNameForNewWorkspace() -> String {
+        "Workspace \(workspaces.count + 1)"
     }
 
     private var workspaceReorderInsertionLine: some View {
@@ -301,8 +317,9 @@ struct SidebarView: View {
             title: "New Workspace",
             systemImage: "plus.rectangle",
             action: {
-                newWorkspaceDefaultName = "Workspace \(workspaces.count + 1)"
-                showNewWorkspaceSheet = true
+                newWorkspaceSheetRequest = NewWorkspaceSheetRequest(
+                    defaultName: defaultNameForNewWorkspace()
+                )
             }
         )
         .padding(.horizontal, 4)
@@ -474,8 +491,13 @@ struct WorkspaceRowView: View {
                 .font(GhosttyUIFonts.font(size: 16, weight: .medium, fallbackDesign: .monospaced))
                 .foregroundStyle(editingForeground)
                 .focused($isFieldFocused)
+                .onChange(of: isFieldFocused) { _, focused in
+                    if !focused && isEditing {
+                        endRename()
+                    }
+                }
                 .onExitCommand {
-                    isEditing = false
+                    endRename()
                 }
                 .onAppear {
                     isFieldFocused = true
@@ -525,8 +547,7 @@ struct WorkspaceRowView: View {
         .contentShape(Rectangle())
         .highPriorityGesture(
             TapGesture(count: 2).onEnded {
-                editText = workspace.name
-                isEditing = true
+                beginRename()
             }
         )
         .simultaneousGesture(TapGesture().onEnded {
@@ -539,8 +560,7 @@ struct WorkspaceRowView: View {
         }
         .contextMenu {
             Button("Rename") {
-                editText = workspace.name
-                isEditing = true
+                beginRename()
             }
             Button("Set Working Directory...") {
                 onSetWorkingDirectory?()
@@ -552,12 +572,25 @@ struct WorkspaceRowView: View {
         }
     }
 
+    private func beginRename() {
+        editText = workspace.name
+        isEditing = true
+        NotificationCenter.default.post(name: .frosttyWillBeginEditing, object: nil)
+    }
+
     private func commitRename() {
         let trimmed = editText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             onRename?(trimmed)
         }
+        endRename()
+    }
+
+    private func endRename() {
+        guard isEditing else { return }
         isEditing = false
+        isFieldFocused = false
+        NotificationCenter.default.post(name: .frosttyDidEndEditing, object: nil)
     }
 }
 

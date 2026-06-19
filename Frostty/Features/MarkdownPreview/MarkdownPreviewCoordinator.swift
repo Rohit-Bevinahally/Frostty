@@ -7,8 +7,14 @@ protocol MarkdownPreviewHost: AnyObject {
     var window: NSWindow? { get }
 
     func markdownPreviewWorkingDirectory(for tab: Tab) -> String?
-    func restoreFocusAfterMarkdownPreview()
+    func restoreFocusAfterMarkdownPreview(sourcePaneID: UUID?, sourceTabID: UUID?)
     func pauseActiveTabSurfaces()
+}
+
+extension MarkdownPreviewHost {
+    func restoreFocusAfterMarkdownPreview() {
+        restoreFocusAfterMarkdownPreview(sourcePaneID: nil, sourceTabID: nil)
+    }
 }
 
 @MainActor
@@ -98,9 +104,14 @@ final class MarkdownPreviewCoordinator {
 
     func dismiss() {
         guard session.isPresented else { return }
+        let sourcePaneID = session.sourcePaneID
+        let sourceTabID = session.sourceTabID
         deactivateShortcutContext()
         session.dismiss()
-        host?.restoreFocusAfterMarkdownPreview()
+        host?.restoreFocusAfterMarkdownPreview(
+            sourcePaneID: sourcePaneID,
+            sourceTabID: sourceTabID
+        )
     }
 
     func syncForActiveTab(activeTabID: UUID?) {
@@ -113,15 +124,25 @@ final class MarkdownPreviewCoordinator {
     }
 
     func dismissIfOwnedBy(tabID: UUID) {
-        guard session.sourceTabID == tabID else { return }
+        guard session.sourceTabID == tabID, session.isPresented else { return }
+        let sourcePaneID = session.sourcePaneID
         deactivateShortcutContext()
         session.dismiss()
+        host?.restoreFocusAfterMarkdownPreview(
+            sourcePaneID: sourcePaneID,
+            sourceTabID: tabID
+        )
     }
 
     func dismissIfOwnedBy(paneID: UUID) {
-        guard session.sourcePaneID == paneID else { return }
+        guard session.sourcePaneID == paneID, session.isPresented else { return }
+        let sourceTabID = session.sourceTabID
         deactivateShortcutContext()
         session.dismiss()
+        host?.restoreFocusAfterMarkdownPreview(
+            sourcePaneID: paneID,
+            sourceTabID: sourceTabID
+        )
     }
 
     @discardableResult

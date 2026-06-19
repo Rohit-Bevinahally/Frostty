@@ -31,6 +31,8 @@ extension Notification.Name {
     static let ghosttyConfirmClipboard = Notification.Name("com.frostty.ghostty.confirmClipboard")
     static let frosttyRenameTab = Notification.Name("com.frostty.renameTab")
     static let frosttyWillBeginEditing = Notification.Name("com.frostty.willBeginEditing")
+    static let frosttyDidEndEditing = Notification.Name("com.frostty.didEndEditing")
+    static let frosttyShowNewWorkspaceSheet = Notification.Name("com.frostty.showNewWorkspaceSheet")
     static let frosttySurfaceDidFocus = Notification.Name("com.frostty.surfaceDidFocus")
     static let frosttyBrowserPaneDidFocus = Notification.Name("frosttyBrowserPaneDidFocus")
     static let frosttyPaneDragEndedNoTarget = Notification.Name("frosttyPaneDragEndedNoTarget")

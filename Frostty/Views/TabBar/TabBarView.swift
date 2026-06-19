@@ -436,11 +436,13 @@ struct TabItemView: View {
         }
         isEditing = false
         onEditingChanged?(false)
+        NotificationCenter.default.post(name: .frosttyDidEndEditing, object: nil)
     }
 
     private func cancelRename() {
         isEditing = false
         onEditingChanged?(false)
+        NotificationCenter.default.post(name: .frosttyDidEndEditing, object: nil)
     }
 
     private var renameFieldMinWidth: CGFloat {
@@ -768,6 +770,14 @@ private final class TabRenameTextView: NSTextView {
         default:
             super.doCommand(by: selector)
         }
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let result = super.resignFirstResponder()
+        if result {
+            onCancel?()
+        }
+        return result
     }
 
     override func scrollRangeToVisible(_ range: NSRange) {

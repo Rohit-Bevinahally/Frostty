@@ -639,8 +639,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         }
         config.scale_factor = Double(window.backingScaleFactor)
 
-        // Inherit working directory: from current tab's pwd, or workspace's working directory
-        let pwd = activeTab?.pwd ?? workspace.workingDirectory
+        // Inherit working directory from the active tab's current cwd.
+        let pwd = activeTab?.pwd
 
         guard let surfaceID = tab.registry.createSurface(app: app, config: config, pwd: pwd) else {
             logger.error("Failed to create surface for new tab")
@@ -667,8 +667,9 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         var config = GhosttyFFI.surfaceConfigNew()
         config.scale_factor = Double(window.backingScaleFactor)
 
-        // Home directory (pass nil for pwd to use default)
-        guard let surfaceID = tab.registry.createSurface(app: app, config: config, pwd: nil) else {
+        // Use the workspace's configured working directory (nil falls back to default/home).
+        let pwd = workspace.workingDirectory
+        guard let surfaceID = tab.registry.createSurface(app: app, config: config, pwd: pwd) else {
             logger.error("Failed to create surface for new tab (end)")
             return
         }
@@ -940,8 +941,16 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     // MARK: - Workspace Operations
 
     private func createNewWorkspaceFromShortcut() {
-        let n = windowSession.workspaces.count + 1
-        createNewWorkspace(name: "Workspace \(n)", workingDirectory: nil)
+        requestNewWorkspaceSheet()
+    }
+
+    func requestNewWorkspaceSheet() {
+        let defaultName = "Workspace \(windowSession.workspaces.count + 1)"
+        NotificationCenter.default.post(
+            name: .frosttyShowNewWorkspaceSheet,
+            object: nil,
+            userInfo: ["defaultName": defaultName]
+        )
     }
 
     @discardableResult
@@ -1281,9 +1290,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard tab.registry.paneView(for: targetID) != nil else { return }
         tab.splitTree.focusedLeafID = targetID
         syncFocusToSurfaceTree(in: tab)
-        _ = tab.registry.makeFirstResponder(for: targetID, in: window)
         syncTabTitleWithFocusedPane(in: tab)
         updateLayout()
+        _ = tab.registry.makeFirstResponder(for: targetID, in: window)
+        restoreFocus()
     }
 
     private func synchronizePaneFocus(in tab: Tab, focusedID: UUID) {
@@ -1547,6 +1557,8 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
                            name: .ghosttyConfigChange, object: nil)
         center.addObserver(self, selector: #selector(handleWillBeginEditing(_:)),
                            name: .frosttyWillBeginEditing, object: nil)
+        center.addObserver(self, selector: #selector(handleDidEndEditing(_:)),
+                           name: .frosttyDidEndEditing, object: nil)
         center.addObserver(self, selector: #selector(handleSurfaceDidFocus(_:)),
                            name: .frosttySurfaceDidFocus, object: nil)
         center.addObserver(self, selector: #selector(handleBrowserPaneDidFocus(_:)),
@@ -1786,6 +1798,10 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         window?.makeFirstResponder(hostingView)
     }
 
+    @objc private func handleDidEndEditing(_ notification: Notification) {
+        restoreFocus()
+    }
+
     @objc private func handleSurfaceDidFocus(_ notification: Notification) {
         if markdownPreviewCoordinator.shouldRestoreFocusFromTerminalOrBrowser() {
             return
@@ -1930,8 +1946,30 @@ extension FrosttyWindowController: MarkdownPreviewHost {
         tab.pwd ?? windowSession.activeWorkspace?.workingDirectory
     }
 
-    func restoreFocusAfterMarkdownPreview() {
-        restoreFocus()
+    func restoreFocusAfterMarkdownPreview(sourcePaneID: UUID?, sourceTabID: UUID?) {
+        guard let sourceTabID, let sourcePaneID,
+              let (tab, workspace) = tabAndWorkspace(for: sourceTabID),
+              tab.registry.paneView(for: sourcePaneID) != nil else {
+            if sourcePaneID != nil || sourceTabID != nil, let tab = activeTab {
+                tab.registry.resumeVisible(visibleIDs: Set(tab.splitTree.allLeafIDs()))
+            }
+            restoreFocus()
+            return
+        }
+
+        if windowSession.activeWorkspaceID != workspace.id {
+            windowSession.activeWorkspaceID = workspace.id
+            refreshHostingView()
+        }
+        workspace.activeTabID = tab.id
+
+        if tab.id != activeTab?.id {
+            activateCurrentTab()
+        } else {
+            tab.registry.resumeVisible(visibleIDs: Set(tab.splitTree.allLeafIDs()))
+        }
+
+        focusPane(in: tab, targetID: sourcePaneID)
     }
 
     func pauseActiveTabSurfaces() {

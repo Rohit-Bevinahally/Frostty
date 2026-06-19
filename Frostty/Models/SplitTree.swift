@@ -296,10 +296,27 @@ struct SplitTree: Codable, Equatable, Sendable {
         }
 
         let currentCenter = CGPoint(x: currentSlot.bounds.midX, y: currentSlot.bounds.midY)
-        return candidates.min(by: {
+        if let nearest = candidates.min(by: {
             distance(from: currentCenter, to: CGPoint(x: $0.bounds.midX, y: $0.bounds.midY))
                 < distance(from: currentCenter, to: CGPoint(x: $1.bounds.midX, y: $1.bounds.midY))
-        })?.id
+        }) {
+            return nearest.id
+        }
+
+        // No pane in the requested direction — wrap to the opposite edge.
+        let wrapCandidates = slots.filter { $0.id != leafID }
+        guard !wrapCandidates.isEmpty else { return nil }
+
+        switch direction {
+        case .left:
+            return wrapCandidates.max(by: { $0.bounds.midX < $1.bounds.midX })?.id
+        case .right:
+            return wrapCandidates.min(by: { $0.bounds.midX < $1.bounds.midX })?.id
+        case .up:
+            return wrapCandidates.max(by: { $0.bounds.midY < $1.bounds.midY })?.id
+        case .down:
+            return wrapCandidates.min(by: { $0.bounds.midY < $1.bounds.midY })?.id
+        }
     }
 
     private func distance(from a: CGPoint, to b: CGPoint) -> CGFloat {

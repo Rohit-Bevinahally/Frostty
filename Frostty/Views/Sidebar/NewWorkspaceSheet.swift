@@ -7,13 +7,21 @@ import SwiftUI
 
 struct NewWorkspaceSheet: View {
     @Binding var isPresented: Bool
-    var defaultName: String
-    var onCreate: (String, String?) -> Bool
+    let defaultName: String
+    let onCreate: (String, String?) -> Bool
 
-    @State private var name: String = ""
-    @State private var workingDirectory: String = ""
+    @State private var name: String
+    @State private var workingDirectory: String
     @State private var validationError: WorkingDirectoryValidationError?
     @FocusState private var nameFocused: Bool
+
+    init(isPresented: Binding<Bool>, defaultName: String, onCreate: @escaping (String, String?) -> Bool) {
+        _isPresented = isPresented
+        self.defaultName = defaultName
+        self.onCreate = onCreate
+        _name = State(initialValue: defaultName)
+        _workingDirectory = State(initialValue: "")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
