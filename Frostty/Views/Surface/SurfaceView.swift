@@ -129,6 +129,7 @@ class SurfaceView: NSView, ObservableObject {
     private func setupView() {
         wantsLayer = true
         clipsToBounds = true
+        applyGlassBackgroundAppearance()
 
         unhealthyOverlay.isHidden = true
         unhealthyOverlay.translatesAutoresizingMaskIntoConstraints = false
@@ -150,6 +151,13 @@ class SurfaceView: NSView, ObservableObject {
             return
         }
         self.surfaceController = controller
+    }
+
+    /// Keep the AppKit layer transparent so liquid-glass tint shows through the renderer.
+    func applyGlassBackgroundAppearance() {
+        wantsLayer = true
+        layer?.isOpaque = false
+        layer?.backgroundColor = NSColor.clear.cgColor
     }
 
     // MARK: - View Lifecycle

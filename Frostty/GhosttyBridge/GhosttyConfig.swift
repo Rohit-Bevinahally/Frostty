@@ -60,18 +60,9 @@ final class GhosttyConfigManager {
         }
 
         GhosttyFFI.configLoadDefaultFiles(cfg)
+        GhosttyFFI.configLoadCLIArgs(cfg)
         GhosttyFFI.configLoadRecursiveFiles(cfg)
         GhosttyFFI.configFinalize(cfg)
-
-        let diagCount = GhosttyFFI.configDiagnosticsCount(cfg)
-        if diagCount > 0 {
-            logger.warning("Configuration loaded with \(diagCount) diagnostic(s)")
-            for i in 0..<diagCount {
-                let diag = GhosttyFFI.configGetDiagnostic(cfg, index: i)
-                let message = String(cString: diag.message)
-                logger.warning("Config diagnostic: \(message)")
-            }
-        }
 
         return cfg
     }
@@ -186,6 +177,14 @@ final class GhosttyConfigManager {
             green: CGFloat(color.g) / 255.0,
             blue: CGFloat(color.b) / 255.0,
             alpha: 1.0
+        )
+    }
+
+    /// Theme background with `background-opacity` applied, matching Ghostty window tinting.
+    var tintedBackgroundColor: NSColor {
+        TerminalGlassAppearance.tintedBackgroundColor(
+            backgroundColor: backgroundColor,
+            backgroundOpacity: backgroundOpacity
         )
     }
 

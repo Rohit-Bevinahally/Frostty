@@ -190,6 +190,7 @@ final class SurfaceRegistry {
         }
 
         surfaceView.surfaceController = controller
+        surfaceView.applyGlassBackgroundAppearance()
         let id = controller.id
 
         entries[id] = .terminal(TerminalEntry(view: surfaceView, controller: controller, state: .attached))

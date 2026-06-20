@@ -108,6 +108,8 @@ final class GhosttyAppController {
     func reloadConfig() {
         guard let app else { return }
 
+        FrosttyConfig.shared.reload()
+
         let newConfigManager = GhosttyConfigManager()
         guard newConfigManager.isLoaded, let newConfig = newConfigManager.config else {
             logger.warning("Config reload failed — keeping previous config")
@@ -116,6 +118,8 @@ final class GhosttyAppController {
 
         GhosttyFFI.appUpdateConfig(app, config: newConfig)
         self.configManager = newConfigManager
+
+        NotificationCenter.default.post(name: .ghosttyConfigChange, object: nil)
     }
 
     // MARK: - Private

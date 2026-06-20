@@ -3,7 +3,7 @@ options:
   bundleIdPrefix: com.frostty
   deploymentTarget:
     macOS: "15.0"
-  xcodeVersion: "16.0"
+  xcodeVersion: "26.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
 

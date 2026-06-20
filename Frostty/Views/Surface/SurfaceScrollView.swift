@@ -225,9 +225,14 @@ class SurfaceScrollView: NSView {
         scrollView.autohidesScrollers = false
         scrollView.scrollerKnobStyle = .default
         scrollView.usesPredominantAxisScrolling = true
+        scrollView.contentView.drawsBackground = false
+        scrollView.contentView.wantsLayer = true
+        scrollView.contentView.layer?.backgroundColor = NSColor.clear.cgColor
         scrollView.contentView.clipsToBounds = false
         scrollView.contentView.postsBoundsChangedNotifications = true
 
+        documentContentView.wantsLayer = true
+        documentContentView.layer?.backgroundColor = NSColor.clear.cgColor
         documentContentView.addSubview(surfaceView)
 
         // The documentView is an empty NSView that defines scrollable height
@@ -238,6 +243,8 @@ class SurfaceScrollView: NSView {
         scrollView.horizontalScrollElasticity = .none
 
         addSubview(scrollView)
+
+        applyGlassSurfaceAppearanceIfNeeded()
 
         NotificationCenter.default.addObserver(
             self,
@@ -359,6 +366,7 @@ class SurfaceScrollView: NSView {
                 let surfaceObj = obj as? SurfaceView
                 if surfaceObj == nil || surfaceObj === self.surfaceView {
                     self.applyScrollbarConfig()
+                    self.applyGlassSurfaceAppearanceIfNeeded()
                 }
             }
         }
@@ -382,6 +390,16 @@ class SurfaceScrollView: NSView {
         paneHandleHostingView.frame = bounds
         updatePaneDragUI()
         updatePaneHandleIfNeeded()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyGlassSurfaceAppearanceIfNeeded()
+    }
+
+    private func applyGlassSurfaceAppearanceIfNeeded() {
+        guard FrosttyConfig.shared.usesGlassBackground else { return }
+        surfaceView.applyGlassBackgroundAppearance()
     }
 
     private func updatePaneHandleIfNeeded() {
@@ -431,7 +449,7 @@ class SurfaceScrollView: NSView {
             }
         }
 
-        // ScrollView fills our entire bounds
+        // ScrollView fills our bounds.
         scrollView.frame = bounds
 
         // Surface view matches our content size (viewport)

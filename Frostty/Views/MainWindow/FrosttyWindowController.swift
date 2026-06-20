@@ -17,6 +17,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private(set) var windowSession: WindowSession
     private var splitContainerView: SplitContainerView?
     private var hostingView: NSHostingView<MainContentView>?
+    private var windowGlassContainerStorage: NSView?
     private var closingTabIDs: Set<UUID> = []
     private var focusRequestID: UInt64 = 0
     private var isPaneResizeMode = false
@@ -146,6 +147,11 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+
+    override func showWindow(_ sender: Any?) {
+        super.showWindow(sender)
+        updateWindowBackgroundAppearance()
     }
 
     // MARK: - Setup
@@ -319,11 +325,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private func setupUI() {
-        guard let window = self.window,
-              let contentView = window.contentView else { return }
-
-        contentView.wantsLayer = true
-        contentView.layer?.backgroundColor = NSColor.clear.cgColor
+        guard let window = self.window else { return }
 
         let container = SplitContainerView(registry: SurfaceRegistry())
         container.onRatioChange = { [weak self] path, ratio, splitSize in
@@ -333,10 +335,21 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
         let mainContent = buildMainContentView()
         let hosting = NonDraggableHostingView(rootView: mainContent)
-        hosting.frame = contentView.bounds
-        hosting.autoresizingMask = [.width, .height]
-        contentView.addSubview(hosting)
+
+        if #available(macOS 26.0, *) {
+            // TerminalViewContainer is window.contentView, with glass
+            // as a sibling below the hosting view inside that container.
+            let glassContainer = TerminalWindowGlassContainer(contentView: hosting)
+            glassContainer.wantsLayer = true
+            glassContainer.layer?.backgroundColor = NSColor.clear.cgColor
+            window.contentView = glassContainer
+            self.windowGlassContainerStorage = glassContainer
+        } else {
+            window.contentView = hosting
+        }
+
         self.hostingView = hosting
+        updateTerminalGlassAppearance()
     }
 
     private func setupTerminalSurface() {
@@ -1159,8 +1172,11 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         guard let window = self.window else { return }
 
         let config = GhosttyAppController.shared.configManager
+        let frosttyConfig = FrosttyConfig.shared
         let opacity = config.backgroundOpacity
-        let shouldUseTransparentBackground = !window.styleMask.contains(.fullScreen) && opacity < 1.0
+        let usesGlassBackground = frosttyConfig.usesGlassBackground
+        let shouldUseTransparentBackground = !window.styleMask.contains(.fullScreen)
+            && (opacity < 1.0 || usesGlassBackground)
 
         if shouldUseTransparentBackground {
             window.isOpaque = false
@@ -1168,7 +1184,9 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             // let the terminal renderer provide the tinted background content.
             window.backgroundColor = .white.withAlphaComponent(0.001)
 
-            if let app = GhosttyAppController.shared.app {
+            // Legacy CGS window blur is not used with liquid glass — NSGlassEffectView
+            // handles the backdrop at the window content level instead.
+            if !usesGlassBackground, let app = GhosttyAppController.shared.app {
                 GhosttyFFI.setWindowBackgroundBlur(
                     app,
                     window: Unmanaged.passUnretained(window).toOpaque()
@@ -1178,6 +1196,41 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             window.isOpaque = true
             window.backgroundColor = config.backgroundColor.withAlphaComponent(1.0)
         }
+
+        updateTerminalGlassAppearance()
+    }
+
+    private func updateTerminalGlassAppearance(isKeyWindow: Bool? = nil) {
+        guard #available(macOS 26.0, *) else { return }
+        updateTerminalGlassAppearance26(isKeyWindow: isKeyWindow)
+    }
+
+    @available(macOS 26.0, *)
+    private var windowGlassContainer: TerminalWindowGlassContainer? {
+        windowGlassContainerStorage as? TerminalWindowGlassContainer
+    }
+
+    @available(macOS 26.0, *)
+    private func updateTerminalGlassAppearance26(isKeyWindow: Bool? = nil) {
+        let config = GhosttyAppController.shared.configManager
+        let key = isKeyWindow ?? (window?.isKeyWindow ?? true)
+        windowGlassContainer?.applyGlass(
+            from: config,
+            preferredBackgroundColor: preferredTerminalBackgroundColor(),
+            isKeyWindow: key
+        )
+        windowGlassContainer?.updateKeyStatus(key)
+    }
+
+    @available(macOS 26.0, *)
+    private func preferredTerminalBackgroundColor() -> NSColor? {
+        let config = GhosttyAppController.shared.configManager
+        guard FrosttyConfig.shared.usesGlassBackground else { return nil }
+
+        let alpha = min(max(config.backgroundOpacity, 0.001), 1.0)
+        let backgroundColor = config.backgroundColor
+
+        return backgroundColor.withAlphaComponent(alpha)
     }
 
     // MARK: - Split Operations
@@ -1790,6 +1843,14 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func handleConfigChangeNotification(_ notification: Notification) {
+        if notification.object == nil,
+           let config = GhosttyAppController.shared.configManager.config {
+            for workspace in windowSession.workspaces {
+                for tab in workspace.tabs {
+                    tab.registry.applyConfig(config)
+                }
+            }
+        }
         updateWindowBackgroundAppearance()
     }
 
@@ -1818,6 +1879,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
         markFocusedPane(in: tab, focusedID: surfaceID)
         if tab.id == activeTab?.id {
             updateLayout()
+            updateTerminalGlassAppearance()
         }
     }
 
@@ -1900,6 +1962,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         GhosttyAppController.shared.setFocus(false)
+        updateTerminalGlassAppearance(isKeyWindow: false)
         if let tab = activeTab {
             syncFocusToSurfaceTree(in: tab)
         }

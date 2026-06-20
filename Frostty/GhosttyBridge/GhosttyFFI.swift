@@ -17,7 +17,7 @@ enum GhosttyFFI {
 
     @discardableResult
     static func initialize() -> Bool {
-        ghostty_init(0, nil) == GHOSTTY_SUCCESS
+        ghostty_init(UInt(CommandLine.argc), CommandLine.unsafeArgv) == GHOSTTY_SUCCESS
     }
 
     static func info() -> ghostty_info_s {

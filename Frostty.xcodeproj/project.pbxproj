@@ -29,6 +29,7 @@
 		39EA8B2E401902DD95E32E40 /* MarkdownPreviewSearchShortcutContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EAFCB47491C65925DD912F /* MarkdownPreviewSearchShortcutContext.swift */; };
 		4267FA0A8D5D1F447E8B87A0 /* GhosttySurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFEF0DA304F4C404133C9313 /* GhosttySurface.swift */; };
 		471E5BF10437586EDA42F76B /* FrosttyActionDefinition.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9E476BDF81099D49439B3F5 /* FrosttyActionDefinition.swift */; };
+		48ABC0B91F6D572E05B61441 /* TerminalGlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 320220732627C65D95D7BB45 /* TerminalGlassEffect.swift */; };
 		498547E4F4403DAD15C81F19 /* EventTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51514732293A8D67475BF38D /* EventTranslator.swift */; };
 		4E93F54C94B3F282CCDC8053 /* BrowserAutomation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */; };
 		5163AE6447A4F1A8CAD54772 /* ShortcutContexts.md in Resources */ = {isa = PBXBuildFile; fileRef = 2A98459F2442559B2B1E75F6 /* ShortcutContexts.md */; };
@@ -38,6 +39,7 @@
 		5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EEA303362A23E01DADD6A6 /* TokyoNight.swift */; };
 		63D3F45F212D9F5A12ABBACD /* GhosttyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249A632020C8B497F269BFA7 /* GhosttyApp.swift */; };
 		7012AE0EDB11D2E6FEE662CD /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57652394DF6F43C2D5546861 /* SidebarView.swift */; };
+		77A8E7E879D0B0F14E7C2320 /* FrosttyConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4523D2E4C4432BE5CC8ADF37 /* FrosttyConfig.swift */; };
 		7825D1BCEAE4BC1142461CA1 /* BrowserServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7955A6D4490E384DAC90489 /* BrowserServer.swift */; };
 		7BF8F9B7E6AFF767EB8FBEAC /* FrosttyActionServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55489CC3D13E342270C593D /* FrosttyActionServerTests.swift */; };
 		7D3E40B275F372A5A6AC79F8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7536C0DA7C8A3CE1E468CB6F /* AppDelegate.swift */; };
@@ -104,8 +106,10 @@
 		2A6165801BFF45A91EC7329B /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		2A98459F2442559B2B1E75F6 /* ShortcutContexts.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ShortcutContexts.md; sourceTree = "<group>"; };
 		2BF4FF54CF98A611449EB62D /* BrowserTabBroker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTabBroker.swift; sourceTree = "<group>"; };
+		320220732627C65D95D7BB45 /* TerminalGlassEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalGlassEffect.swift; sourceTree = "<group>"; };
 		3D1E7184D28460DD4B29189C /* BrowserAutomation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAutomation.swift; sourceTree = "<group>"; };
 		3FCA9583DBC851F0A9F4DC2A /* MarkdownPreviewCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewCoordinator.swift; sourceTree = "<group>"; };
+		4523D2E4C4432BE5CC8ADF37 /* FrosttyConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyConfig.swift; sourceTree = "<group>"; };
 		51514732293A8D67475BF38D /* EventTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTranslator.swift; sourceTree = "<group>"; };
 		5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitDividerView.swift; sourceTree = "<group>"; };
 		55D39BF49EB1BFA34DC0FA71 /* FrosttyWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrosttyWindowController.swift; sourceTree = "<group>"; };
@@ -226,6 +230,7 @@
 				5253DB00D0CEC5B89A1DA58B /* SplitDividerView.swift */,
 				D06FC1F8874992E6B4F588E1 /* SurfaceScrollView.swift */,
 				7925B77E9B3EF28950BF9A37 /* SurfaceView.swift */,
+				320220732627C65D95D7BB45 /* TerminalGlassEffect.swift */,
 			);
 			path = Surface;
 			sourceTree = "<group>";
@@ -238,6 +243,14 @@
 				9D0BA29DAA133631BF1D865E /* MainContentView.swift */,
 			);
 			path = MainWindow;
+			sourceTree = "<group>";
+		};
+		12D57DE507D5230DF468732E /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				4523D2E4C4432BE5CC8ADF37 /* FrosttyConfig.swift */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		5BFF36B8900A783919B97D13 /* Fixtures */ = {
@@ -337,6 +350,7 @@
 			children = (
 				B5AAF6C1F4FEB997912D3392 /* Info.plist */,
 				06937AF4C3EFBFC7DC3524A8 /* App */,
+				12D57DE507D5230DF468732E /* Config */,
 				A138A296457F36F6B33E148F /* Features */,
 				F2447ECC83FF6BE957715840 /* GhosttyBridge */,
 				950323C542788B3E75FE57D7 /* Input */,
@@ -483,7 +497,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					FD0683A5ABE98E7C6EB8DE63 = {
 						DevelopmentTeam = "";
@@ -582,6 +596,7 @@
 				E69D65E7ECCA992F7A4DFF9C /* FrosttyActionParser.swift in Sources */,
 				0AA17A1BC00B9B494D1FBE14 /* FrosttyActionRegistry.swift in Sources */,
 				DDD7E7277AAEF95339D3FE73 /* FrosttyActionServer.swift in Sources */,
+				77A8E7E879D0B0F14E7C2320 /* FrosttyConfig.swift in Sources */,
 				FD7567AC79A5498BBDD360A2 /* FrosttyNotificationNames.swift in Sources */,
 				E8CC4A7BD4E8C5DB7615676A /* FrosttyWindow.swift in Sources */,
 				943B705C149024AFD2D5A10D /* FrosttyWindowController.swift in Sources */,
@@ -615,6 +630,7 @@
 				28AF7AB2B48992623A91A664 /* SurfaceView.swift in Sources */,
 				0D5663F98C28148D1CFA0B7B /* Tab.swift in Sources */,
 				010B2ED011450841882CB09A /* TabBarView.swift in Sources */,
+				48ABC0B91F6D572E05B61441 /* TerminalGlassEffect.swift in Sources */,
 				5BE2AAA65DDB7FEA8E642ED7 /* TokyoNight.swift in Sources */,
 				19278A0B73D765A44A0ECD24 /* WindowSession.swift in Sources */,
 				2C4D14F22B2D6757E0D75635 /* WorkingDirectoryField.swift in Sources */,
