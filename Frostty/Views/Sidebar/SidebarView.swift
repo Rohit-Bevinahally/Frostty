@@ -9,6 +9,8 @@ import SwiftUI
 private enum WorkspaceCapsuleMetrics {
     static let cornerRadius: CGFloat = 8
     static let minHeight: CGFloat = 34
+    /// Matches Cmd+1…9 workspace shortcuts in `FrosttyWindowController`.
+    static let keyboardShortcutCount = 9
 }
 
 private struct WorkspaceFramePreferenceKey: PreferenceKey {
@@ -81,17 +83,17 @@ private struct EditWorkingDirectorySheet: View {
                 Spacer()
                 Button("Cancel", action: onDismiss)
                     .keyboardShortcut(.cancelAction)
-                    .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
+                    .buttonStyle(.frosttySheetCancel)
                 Button("Save") {
                     submit()
                 }
                 .keyboardShortcut(.defaultAction)
-                .tint(TokyoNight.activeTabBackgroundColor)
+                .buttonStyle(.frosttySheetAccent)
             }
         }
         .padding(20)
         .frame(minWidth: 360)
-        .background(TokyoNight.barBackgroundColor)
+        .background(FrosttyChromeAppearance.opaqueChromeBackground)
         .font(GhosttyUIFonts.font(textStyle: .body))
         .alert(
             "Invalid Working Directory",
@@ -128,6 +130,7 @@ struct SidebarView: View {
     let workspaces: [Workspace]
     let activeWorkspaceID: UUID?
     let currentWidth: CGFloat
+    let titlebarInset: CGFloat
 
     var onSelectWorkspace: ((UUID) -> Void)?
     var onAddWorkspace: ((String, String?) -> Bool)?
@@ -150,8 +153,10 @@ struct SidebarView: View {
     @State private var workingDirectoryEditor: WorkingDirectoryEditorPayload?
     @State private var paneDropWorkspaceID: UUID?
     @State private var paneDropInsertionSlot: Int?
+    @State private var chromeAppearanceTick: UInt = 0
 
     var body: some View {
+        let _ = chromeAppearanceTick
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 4) {
@@ -168,8 +173,10 @@ struct SidebarView: View {
 
                         WorkspaceRowView(
                             workspace: workspace,
+                            workspaceIndex: index,
                             isActive: workspace.id == activeWorkspaceID,
                             isPaneDropTarget: paneDropWorkspaceID == workspace.id,
+                            dragEnabled: workspaces.count > 1 && onMoveWorkspace != nil,
                             onSelect: { onSelectWorkspace?(workspace.id) },
                             onRename: { newName in onRenameWorkspace?(workspace.id, newName) },
                             onDelete: { onDeleteWorkspace?(workspace.id) },
@@ -178,6 +185,40 @@ struct SidebarView: View {
                                     workspaceID: workspace.id,
                                     draftPath: workspace.workingDirectory ?? ""
                                 )
+                            },
+                            onDragChanged: { translation in
+                                if draggedWorkspaceID == nil {
+                                    draggedWorkspaceID = workspace.id
+                                    draggedFromIndex = index
+                                }
+                                guard draggedWorkspaceID == workspace.id else { return }
+                                dragOffsetY = translation
+                                let baseMidY = workspaceFrameCache.frames[workspace.id]?.midY ?? 0
+                                insertionSlot = insertionSlotForVerticalDrag(
+                                    dragMidY: baseMidY + translation,
+                                    workspaces: workspaces,
+                                    frames: workspaceFrameCache.frames
+                                )
+                            },
+                            onDragEnded: {
+                                if let from = draggedFromIndex,
+                                   draggedWorkspaceID == workspace.id,
+                                   workspaces.count > 1,
+                                   let slot = insertionSlot,
+                                   let to = destinationIndexForWorkspaceReorder(
+                                    fromIndex: from,
+                                    insertionSlot: slot,
+                                    count: workspaces.count
+                                   ),
+                                   from != to {
+                                    onMoveWorkspace?(from, to)
+                                }
+                                withAnimation(.easeOut(duration: 0.18)) {
+                                    draggedWorkspaceID = nil
+                                    draggedFromIndex = nil
+                                    dragOffsetY = 0
+                                    insertionSlot = nil
+                                }
                             }
                         )
                         .background(workspaceFrameReporter(workspaceID: workspace.id))
@@ -185,7 +226,6 @@ struct SidebarView: View {
                         .zIndex(draggedWorkspaceID == workspace.id ? 2 : 0)
                         .scaleEffect(draggedWorkspaceID == workspace.id ? 1.02 : 1.0)
                         .animation(.easeOut(duration: 0.12), value: dragOffsetY)
-                        .highPriorityGesture(workspaceDragGesture(index: index, workspace: workspace))
                     }
 
                     if let slot = insertionSlot, draggedWorkspaceID != nil, slot == workspaces.count {
@@ -202,7 +242,7 @@ struct SidebarView: View {
                     newWorkspaceButton
                 }
                 .padding(.horizontal, 8)
-                .padding(.top, 8)
+                .padding(.top, titlebarInset + 8)
                 .padding(.bottom, 8)
                 .onPreferenceChange(WorkspaceFramePreferenceKey.self) { frames in
                     Task { @MainActor in
@@ -213,9 +253,16 @@ struct SidebarView: View {
                 }
             }
         }
-        .background(TokyoNight.barBackgroundColor)
+        .overlay(alignment: .top) {
+            if titlebarInset > 0 {
+                WindowDragRegionRepresentable()
+                    .frame(height: titlebarInset)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .frosttyChromePanelBackground(style: FrosttyChromeAppearance.sidebarPanelStyle)
         .font(GhosttyUIFonts.font(textStyle: .body))
-        .overlay {
+        .background {
             GeometryReader { geo in
                 PaneDragDropTargetRepresentable(
                     globalFrame: geo.frame(in: .global),
@@ -240,7 +287,11 @@ struct SidebarView: View {
                     }
                 )
                 .padding(.trailing, 8)
+                .allowsHitTesting(false)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
+            chromeAppearanceTick &+= 1
         }
         .overlay(alignment: .trailing) {
             SidebarResizeHandle(
@@ -333,46 +384,6 @@ struct SidebarView: View {
             .padding(.vertical, 8)
     }
 
-    private func workspaceDragGesture(index: Int, workspace: Workspace) -> some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { value in
-                guard workspaces.count > 1, onMoveWorkspace != nil else { return }
-                if draggedWorkspaceID == nil {
-                    draggedWorkspaceID = workspace.id
-                    draggedFromIndex = index
-                }
-                guard draggedWorkspaceID == workspace.id else { return }
-                dragOffsetY = value.translation.height
-                let baseMidY = workspaceFrameCache.frames[workspace.id]?.midY ?? 0
-                let dragMidY = baseMidY + value.translation.height
-                insertionSlot = insertionSlotForVerticalDrag(
-                    dragMidY: dragMidY,
-                    workspaces: workspaces,
-                    frames: workspaceFrameCache.frames
-                )
-            }
-            .onEnded { _ in
-                if let from = draggedFromIndex,
-                   draggedWorkspaceID == workspace.id,
-                   workspaces.count > 1,
-                   let slot = insertionSlot,
-                   let to = destinationIndexForWorkspaceReorder(
-                    fromIndex: from,
-                    insertionSlot: slot,
-                    count: workspaces.count
-                   ),
-                   from != to {
-                    onMoveWorkspace?(from, to)
-                }
-                withAnimation(.easeOut(duration: 0.18)) {
-                    draggedWorkspaceID = nil
-                    draggedFromIndex = nil
-                    dragOffsetY = 0
-                    insertionSlot = nil
-                }
-            }
-    }
-
     private func updatePaneDropState() {
         guard let paneDropInsertionSlot else { return }
         if paneDropWorkspaceID == nil {
@@ -450,8 +461,10 @@ private struct NewWorkspaceRowButton: View {
         .buttonStyle(.plain)
         .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
         .background {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(hovering ? TokyoNight.inactiveWorkspaceBackgroundColor.opacity(0.55) : Color.clear)
+            FrosttyChromeCapsuleBackground(
+                cornerRadius: 8,
+                material: FrosttyChromeAppearance.newWorkspaceButtonMaterial(isHovering: hovering)
+            )
         }
         .onHover { hovering = $0 }
     }
@@ -461,100 +474,48 @@ private struct NewWorkspaceRowButton: View {
 
 struct WorkspaceRowView: View {
     let workspace: Workspace
+    let workspaceIndex: Int
     let isActive: Bool
     let isPaneDropTarget: Bool
+    var dragEnabled: Bool = false
     var onSelect: (() -> Void)?
     var onRename: ((String) -> Void)?
     var onDelete: (() -> Void)?
     var onSetWorkingDirectory: (() -> Void)?
+    var onDragChanged: ((CGFloat) -> Void)?
+    var onDragEnded: (() -> Void)?
 
     @State private var isEditing = false
     @State private var editText = ""
     @State private var isHovering = false
-    @FocusState private var isFieldFocused: Bool
+    @State private var shouldSelectRenameText = false
 
     private var editingForeground: Color {
         isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor
     }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "folder")
-                .font(GhosttyUIFonts.font(size: 16, weight: .medium))
-                .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
+        ZStack {
+            rowChrome
+                .allowsHitTesting(isEditing)
 
-            if isEditing {
-                TextField("Name", text: $editText, onCommit: {
-                    commitRename()
-                })
-                .textFieldStyle(.plain)
-                .font(GhosttyUIFonts.font(size: 16, weight: .medium, fallbackDesign: .monospaced))
-                .foregroundStyle(editingForeground)
-                .focused($isFieldFocused)
-                .onChange(of: isFieldFocused) { _, focused in
-                    if !focused && isEditing {
-                        endRename()
-                    }
-                }
-                .onExitCommand {
-                    endRename()
-                }
-                .onAppear {
-                    isFieldFocused = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
-                    }
-                }
-            } else {
-                Text(workspace.name)
-                    .font(GhosttyUIFonts.font(
-                        size: 16,
-                        weight: .semibold,
-                        fallbackDesign: .monospaced
-                    ))
-                    .lineLimit(1)
-                    .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
-            }
-
-            Spacer()
-
-            Text("\(workspace.tabs.count)")
-                .font(GhosttyUIFonts.font(size: 13, weight: .bold, fallbackDesign: .rounded))
-                .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(minHeight: WorkspaceCapsuleMetrics.minHeight)
-        .background(
-            RoundedRectangle(cornerRadius: WorkspaceCapsuleMetrics.cornerRadius, style: .continuous)
-                .fill(
-                    isPaneDropTarget
-                        ? TokyoNight.dropZoneFillColor
-                        : (isActive
-                        ? TokyoNight.activeWorkspaceBackgroundColor
-                        : (isHovering ? TokyoNight.inactiveWorkspaceBackgroundColor : Color.clear))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: WorkspaceCapsuleMetrics.cornerRadius, style: .continuous)
-                        .stroke(
-                            isPaneDropTarget
-                                ? TokyoNight.dropZoneStrokeColor
-                                : Color.clear,
-                            lineWidth: 1
-                        )
-                )
-        )
-        .contentShape(Rectangle())
-        .highPriorityGesture(
-            TapGesture(count: 2).onEnded {
-                beginRename()
-            }
-        )
-        .simultaneousGesture(TapGesture().onEnded {
             if !isEditing {
-                onSelect?()
+                Color.clear
+                    .contentShape(Rectangle())
+                    .highPriorityGesture(
+                        TapGesture(count: 2).onEnded {
+                            beginRename()
+                        }
+                    )
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            onSelect?()
+                        }
+                    )
+                    .gesture(rowDragGesture)
             }
-        })
+        }
+        .frame(maxWidth: .infinity, minHeight: WorkspaceCapsuleMetrics.minHeight, alignment: .leading)
         .onHover { hovering in
             isHovering = hovering
         }
@@ -572,8 +533,83 @@ struct WorkspaceRowView: View {
         }
     }
 
+    private var rowDragGesture: some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { value in
+                guard dragEnabled else { return }
+                onDragChanged?(value.translation.height)
+            }
+            .onEnded { _ in
+                guard dragEnabled else { return }
+                onDragEnded?()
+            }
+    }
+
+    private var rowChrome: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "folder")
+                .font(GhosttyUIFonts.font(size: 16, weight: .medium))
+                .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
+
+            if isEditing {
+                WorkspaceRenameField(
+                    text: $editText,
+                    font: GhosttyUIFonts.nsFont(size: 16, weight: .medium, fallbackDesign: .monospaced),
+                    textColor: isActive ? TokyoNight.activeWorkspaceForeground : TokyoNight.inactiveWorkspaceForeground,
+                    selectAllOnActivate: $shouldSelectRenameText,
+                    onCommit: { commitRename() },
+                    onCancel: { endRename() }
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(workspace.name)
+                    .font(GhosttyUIFonts.font(
+                        size: 16,
+                        weight: .semibold,
+                        fallbackDesign: .monospaced
+                    ))
+                    .lineLimit(1)
+                    .textSelection(.disabled)
+                    .foregroundStyle(isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor)
+            }
+
+            Spacer()
+
+            if workspaceIndex < WorkspaceCapsuleMetrics.keyboardShortcutCount {
+                WorkspaceKeyboardShortcutLabel(
+                    number: workspaceIndex + 1,
+                    isActive: isActive
+                )
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: WorkspaceCapsuleMetrics.minHeight, alignment: .leading)
+        .background {
+            FrosttyChromeCapsuleBackground(
+                cornerRadius: WorkspaceCapsuleMetrics.cornerRadius,
+                material: FrosttyChromeAppearance.workspaceCapsuleMaterial(
+                    isActive: isActive,
+                    isHovering: isHovering,
+                    isPaneDropTarget: isPaneDropTarget
+                ),
+                usesSolidFill: FrosttyChromeAppearance.workspaceCapsuleUsesSolidFill(
+                    isActive: isActive,
+                    isPaneDropTarget: isPaneDropTarget
+                )
+            )
+        }
+        .overlay {
+            if isPaneDropTarget {
+                RoundedRectangle(cornerRadius: WorkspaceCapsuleMetrics.cornerRadius, style: .continuous)
+                    .stroke(TokyoNight.dropZoneStrokeColor, lineWidth: 1)
+            }
+        }
+    }
+
     private func beginRename() {
         editText = workspace.name
+        shouldSelectRenameText = true
         isEditing = true
         NotificationCenter.default.post(name: .frosttyWillBeginEditing, object: nil)
     }
@@ -589,8 +625,120 @@ struct WorkspaceRowView: View {
     private func endRename() {
         guard isEditing else { return }
         isEditing = false
-        isFieldFocused = false
+        shouldSelectRenameText = false
         NotificationCenter.default.post(name: .frosttyDidEndEditing, object: nil)
+    }
+}
+
+// MARK: - Workspace shortcut label
+
+private struct WorkspaceKeyboardShortcutLabel: View {
+    let number: Int
+    let isActive: Bool
+
+    private var foreground: Color {
+        isActive ? TokyoNight.activeWorkspaceForegroundColor : TokyoNight.inactiveWorkspaceForegroundColor
+    }
+
+    var body: some View {
+        HStack(spacing: 1) {
+            Image(systemName: "command")
+                .font(GhosttyUIFonts.font(size: 12, weight: .semibold))
+            Text("\(number)")
+                .font(GhosttyUIFonts.font(size: 12, weight: .semibold, fallbackDesign: .rounded))
+        }
+        .foregroundStyle(foreground.opacity(isActive ? 0.9 : 0.75))
+        .accessibilityLabel("Switch to workspace \(number), Command \(number)")
+    }
+}
+
+// MARK: - Workspace rename field
+
+private struct WorkspaceRenameField: NSViewRepresentable {
+    @Binding var text: String
+    let font: NSFont
+    let textColor: NSColor
+    @Binding var selectAllOnActivate: Bool
+    let onCommit: () -> Void
+    let onCancel: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField(string: text)
+        field.isBordered = false
+        field.isBezeled = false
+        field.drawsBackground = false
+        field.focusRingType = .none
+        field.backgroundColor = .clear
+        field.font = font
+        field.textColor = textColor
+        field.delegate = context.coordinator
+        context.coordinator.textField = field
+        return field
+    }
+
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.textField = nsView
+        nsView.font = font
+        nsView.textColor = textColor
+
+        if nsView.stringValue != text {
+            nsView.stringValue = text
+        }
+
+        if selectAllOnActivate {
+            context.coordinator.activate(selectAll: true)
+            DispatchQueue.main.async {
+                selectAllOnActivate = false
+            }
+        }
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: WorkspaceRenameField
+        weak var textField: NSTextField?
+
+        init(parent: WorkspaceRenameField) {
+            self.parent = parent
+        }
+
+        func controlTextDidChange(_ obj: Notification) {
+            guard let field = obj.object as? NSTextField else { return }
+            parent.text = field.stringValue
+        }
+
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                parent.onCommit()
+                return true
+            }
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                parent.onCancel()
+                return true
+            }
+            return false
+        }
+
+        func controlTextDidEndEditing(_ obj: Notification) {
+            guard let field = obj.object as? NSTextField, field === textField else { return }
+            parent.text = field.stringValue
+            parent.onCancel()
+        }
+
+        func activate(selectAll: Bool) {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let field = self.textField, let window = field.window else { return }
+                window.makeFirstResponder(field)
+                if selectAll, let editor = field.currentEditor() {
+                    editor.selectAll(nil)
+                }
+            }
+        }
     }
 }
 

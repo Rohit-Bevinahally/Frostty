@@ -12,6 +12,13 @@ class SplitContainerView: NSView {
     private var currentTree: SplitTree = SplitTree()
     private var maximizedLeafID: UUID?
     private var leafContainers: [UUID: NSView] = [:]
+    var showsSidebar: Bool = true {
+        didSet {
+            guard oldValue != showsSidebar else { return }
+            applyContainerCornerMask()
+            relayoutCurrentTree()
+        }
+    }
     var onRatioChange: (([SplitPathBranch], Double, CGSize) -> Void)?
     var onPaneDrop: ((UUID, UUID, PaneDropZone) -> Void)?
     var onPaneDetachToNewTab: ((UUID, NSPoint) -> Void)?
@@ -19,7 +26,6 @@ class SplitContainerView: NSView {
 
     private static let minPaneSize: CGFloat = 50
     private static let paneBorderWidth: CGFloat = 1
-    private static let paneCornerRadius: CGFloat = 12
 
     init(registry: SurfaceRegistry) {
         self.registry = registry
@@ -103,6 +109,7 @@ class SplitContainerView: NSView {
         }
 
         removeOrphanedLeafContainers()
+        applyContainerCornerMask()
     }
 
     // MARK: - Recursive Layout
@@ -259,16 +266,35 @@ class SplitContainerView: NSView {
         addSubview(divider)
     }
 
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyContainerCornerMask()
+    }
+
+    private func applyContainerCornerMask() {
+        guard let layer else { return }
+        let radius = FrosttyTerminalCornerMask.windowCornerRadius(for: window)
+        FrosttyTerminalCornerMask.apply(
+            to: layer,
+            radius: radius,
+            showSidebar: showsSidebar,
+            isFlipped: isFlipped
+        )
+    }
+
     private func configurePaneAppearance(_ paneView: NSView, paneID: UUID, frame: CGRect) {
         paneView.wantsLayer = true
         guard let layer = paneView.layer else { return }
 
+        // Outer silhouette is owned by SplitContainerView; panes stay square on top.
+        layer.cornerRadius = 0
+        layer.maskedCorners = []
+        layer.mask = nil
+        layer.masksToBounds = false
+
         guard currentTree.isSplit else {
             layer.borderWidth = 0
             layer.borderColor = nil
-            layer.cornerRadius = 0
-            layer.maskedCorners = []
-            layer.masksToBounds = false
             return
         }
 
@@ -276,32 +302,6 @@ class SplitContainerView: NSView {
         layer.borderColor = (paneID == currentTree.focusedLeafID
             ? TokyoNight.activeBorderColor
             : TokyoNight.inactiveBorderColor).cgColor
-
-        let maskedCorners = paneMaskedCorners(for: frame)
-        layer.cornerRadius = maskedCorners.isEmpty ? 0 : Self.paneCornerRadius
-        layer.maskedCorners = maskedCorners
-        layer.cornerCurve = .continuous
-        layer.masksToBounds = !maskedCorners.isEmpty
-    }
-
-    private func paneMaskedCorners(for frame: CGRect) -> CACornerMask {
-        let epsilon: CGFloat = 0.5
-        var corners: CACornerMask = []
-
-        if abs(frame.minX - bounds.minX) <= epsilon, abs(frame.minY - bounds.minY) <= epsilon {
-            corners.insert(.layerMinXMinYCorner)
-        }
-        if abs(frame.maxX - bounds.maxX) <= epsilon, abs(frame.minY - bounds.minY) <= epsilon {
-            corners.insert(.layerMaxXMinYCorner)
-        }
-        if abs(frame.minX - bounds.minX) <= epsilon, abs(frame.maxY - bounds.maxY) <= epsilon {
-            corners.insert(.layerMinXMaxYCorner)
-        }
-        if abs(frame.maxX - bounds.maxX) <= epsilon, abs(frame.maxY - bounds.maxY) <= epsilon {
-            corners.insert(.layerMaxXMaxYCorner)
-        }
-
-        return corners
     }
 
     private func removeDividers() {

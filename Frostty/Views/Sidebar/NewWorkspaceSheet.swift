@@ -62,14 +62,14 @@ struct NewWorkspaceSheet: View {
                     isPresented = false
                 }
                 .keyboardShortcut(.cancelAction)
-                .foregroundStyle(TokyoNight.inactiveWorkspaceForegroundColor)
+                .buttonStyle(.frosttySheetCancel)
 
                 Button("Create") {
                     submit()
                 }
                 .keyboardShortcut(.defaultAction)
+                .buttonStyle(.frosttySheetAccent)
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .tint(TokyoNight.activeTabBackgroundColor)
             }
         }
         .padding(20)

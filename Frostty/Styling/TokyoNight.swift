@@ -20,8 +20,8 @@ enum TokyoNight {
         red: 0x54 / 255.0, green: 0x5c / 255.0, blue: 0x7e / 255.0, alpha: 1.0
     ) // #545c7e
     static let inactiveTabForeground = NSColor(
-        red: 0x29 / 255.0, green: 0x2e / 255.0, blue: 0x42 / 255.0, alpha: 1.0
-    ) // #292e42
+        red: 0x7a / 255.0, green: 0xa2 / 255.0, blue: 0xf7 / 255.0, alpha: 1.0
+    ) // #7aa2f7
 
     // Workspace sidebar
     static let activeWorkspaceBackground = activeTabBackground   // #7aa2f7

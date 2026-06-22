@@ -72,6 +72,10 @@ final class TerminalGlassView: NSView {
     private let glassEffectView = NSGlassEffectView()
     private let inactiveTintOverlay = NSView()
     private var glassTopConstraint: NSLayoutConstraint!
+    private var glassLeadingConstraint: NSLayoutConstraint!
+    private var themeTopOffset: CGFloat = 0
+    private var chromeExclusionTop: CGFloat = 0
+    private var chromeExclusionLeading: CGFloat = 0
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -97,6 +101,11 @@ final class TerminalGlassView: NSView {
             equalTo: topAnchor,
             constant: topOffset
         )
+        glassLeadingConstraint = glassEffectView.leadingAnchor.constraint(
+            equalTo: leadingAnchor,
+            constant: 0
+        )
+        themeTopOffset = topOffset
 
         inactiveTintOverlay.translatesAutoresizingMaskIntoConstraints = false
         inactiveTintOverlay.wantsLayer = true
@@ -105,7 +114,7 @@ final class TerminalGlassView: NSView {
 
         NSLayoutConstraint.activate([
             glassTopConstraint,
-            glassEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            glassLeadingConstraint,
             glassEffectView.bottomAnchor.constraint(equalTo: bottomAnchor),
             glassEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
 
@@ -122,13 +131,74 @@ final class TerminalGlassView: NSView {
 
         glassEffectView.style = config.style.official
         glassEffectView.tintColor = tinted
-        glassEffectView.cornerRadius = config.cornerRadius
 
         updateKeyStatus(isKeyWindow, backgroundColor: config.backgroundColor)
+        applyCornerMask(radius: config.cornerRadius)
+    }
+
+    private var cornerRadius: CGFloat = 0
+    private var showSidebar: Bool = false
+
+    func updateCornerMask(radius: CGFloat, showSidebar: Bool) {
+        self.cornerRadius = radius
+        self.showSidebar = showSidebar
+        applyCornerMask(radius: radius)
+    }
+
+    private func applyCornerMask(radius: CGFloat) {
+        guard radius > 0 else {
+            glassEffectView.cornerRadius = 0
+            glassEffectView.layer?.mask = nil
+            glassEffectView.layer?.masksToBounds = false
+            inactiveTintOverlay.layer?.mask = nil
+            inactiveTintOverlay.layer?.masksToBounds = false
+            return
+        }
+
+        glassEffectView.cornerRadius = 0
+        glassEffectView.wantsLayer = true
+        if let glassLayer = glassEffectView.layer {
+            FrosttyTerminalCornerMask.apply(
+                to: glassLayer,
+                radius: radius,
+                showSidebar: showSidebar,
+                isFlipped: false
+            )
+        }
+
+        inactiveTintOverlay.wantsLayer = true
+        if let overlayLayer = inactiveTintOverlay.layer {
+            FrosttyTerminalCornerMask.apply(
+                to: overlayLayer,
+                radius: radius,
+                showSidebar: showSidebar,
+                isFlipped: false
+            )
+        }
+    }
+
+    override func layout() {
+        super.layout()
+        if cornerRadius > 0 {
+            applyCornerMask(radius: cornerRadius)
+        }
     }
 
     func updateTopInset(_ offset: CGFloat) {
-        glassTopConstraint.constant = offset
+        themeTopOffset = offset
+        applyGlassFrameConstraints()
+    }
+
+    /// Excludes SwiftUI chrome bands from window-level terminal glass so they show wallpaper.
+    func updateChromeExclusion(top: CGFloat, leading: CGFloat) {
+        chromeExclusionTop = top
+        chromeExclusionLeading = leading
+        applyGlassFrameConstraints()
+    }
+
+    private func applyGlassFrameConstraints() {
+        glassTopConstraint.constant = chromeExclusionTop + themeTopOffset
+        glassLeadingConstraint.constant = chromeExclusionLeading
     }
 
     func updateKeyStatus(_ isKeyWindow: Bool, backgroundColor: NSColor) {
@@ -154,6 +224,9 @@ final class TerminalWindowGlassContainer: NSView {
     private let contentView: NSView
     private var glassView: TerminalGlassView?
     private var derivedConfig: TerminalGlassAppearance.Config?
+    private var pendingChromeExclusionTop: CGFloat = 0
+    private var pendingChromeExclusionLeading: CGFloat = 0
+    private var pendingShowSidebar: Bool = false
 
     var windowThemeFrameView: NSView? {
         window?.contentView?.superview
@@ -222,6 +295,18 @@ final class TerminalWindowGlassContainer: NSView {
         glassView.updateKeyStatus(isKeyWindow, backgroundColor: derivedConfig.backgroundColor)
     }
 
+    /// Keeps terminal glass out of sidebar / tab bar chrome so those regions show wallpaper.
+    func updateChromeExclusion(topHeight: CGFloat, leadingWidth: CGFloat, showSidebar: Bool) {
+        pendingChromeExclusionTop = topHeight
+        pendingChromeExclusionLeading = leadingWidth
+        pendingShowSidebar = showSidebar
+        glassView?.updateChromeExclusion(top: topHeight, leading: leadingWidth)
+        glassView?.updateCornerMask(
+            radius: windowCornerRadius ?? 0,
+            showSidebar: showSidebar
+        )
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         updateGlassIfNeeded(isKeyWindow: window?.isKeyWindow ?? true)
@@ -239,6 +324,14 @@ final class TerminalWindowGlassContainer: NSView {
     private func addGlassViewIfNeeded() -> TerminalGlassView? {
         if let existing = glassView {
             updateGlassTopInsetIfNeeded()
+            existing.updateChromeExclusion(
+                top: pendingChromeExclusionTop,
+                leading: pendingChromeExclusionLeading
+            )
+            existing.updateCornerMask(
+                radius: windowCornerRadius ?? 0,
+                showSidebar: pendingShowSidebar
+            )
             return existing
         }
 
@@ -252,6 +345,14 @@ final class TerminalWindowGlassContainer: NSView {
             created.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
         glassView = created
+        created.updateChromeExclusion(
+            top: pendingChromeExclusionTop,
+            leading: pendingChromeExclusionLeading
+        )
+        created.updateCornerMask(
+            radius: windowCornerRadius ?? 0,
+            showSidebar: pendingShowSidebar
+        )
         return created
     }
 
@@ -263,13 +364,21 @@ final class TerminalWindowGlassContainer: NSView {
         }
         guard let effectView = addGlassViewIfNeeded() else { return }
         effectView.configure(derivedConfig, isKeyWindow: isKeyWindow)
+        effectView.updateCornerMask(
+            radius: windowCornerRadius ?? 0,
+            showSidebar: pendingShowSidebar
+        )
     }
 
     private func updateGlassTopInsetIfNeeded() {
         guard let effectView = glassView, let themeFrameView = windowThemeFrameView else {
             return
         }
-        effectView.updateTopInset(-themeFrameView.safeAreaInsets.top)
+        // When chrome is excluded (tab bar / sidebar band), don't pull glass up into that region.
+        let themeOffset = pendingChromeExclusionTop > 0
+            ? 0
+            : -themeFrameView.safeAreaInsets.top
+        effectView.updateTopInset(themeOffset)
     }
 }
 

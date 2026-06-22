@@ -382,8 +382,18 @@ class SurfaceScrollView: NSView {
 
     // MARK: - Layout
 
+    private func clearPaneLayerCornerClipping() {
+        wantsLayer = true
+        clipsToBounds = false
+        layer?.cornerRadius = 0
+        layer?.maskedCorners = []
+        layer?.mask = nil
+        layer?.masksToBounds = false
+    }
+
     override func layout() {
         super.layout()
+        clearPaneLayerCornerClipping()
         synchronizeLayout()
         synchronizeCoreSurface()
         paneDropOverlayView.frame = bounds

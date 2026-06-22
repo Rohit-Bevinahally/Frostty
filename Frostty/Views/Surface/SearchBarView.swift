@@ -292,6 +292,7 @@ struct SearchBarOverlay: View {
     @State private var corner: Corner = .topRight
     @State private var dragOffset: CGSize = .zero
     @State private var barSize: CGSize = .zero
+    @State private var chromeAppearanceTick: UInt = 0
 
     @FocusState private var focused: Bool
 
@@ -311,6 +312,7 @@ struct SearchBarOverlay: View {
     }
 
     var body: some View {
+        let _ = chromeAppearanceTick
         GeometryReader { geo in
             searchBar
                 .background(measureBar)
@@ -322,6 +324,9 @@ struct SearchBarOverlay: View {
                     alignment: corner.alignment
                 )
                 .gesture(dragGesture(in: geo.size))
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
+            chromeAppearanceTick &+= 1
         }
     }
 
@@ -335,9 +340,10 @@ struct SearchBarOverlay: View {
             navButton(systemName: "xmark") { onClose() }
         }
         .padding(8)
-        .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .shadow(radius: 4)
+        .background {
+            FrosttyHUDChipBackground(cornerRadius: 8)
+        }
+        .shadow(color: .black.opacity(FrosttyChromeAppearance.usesGlassBackground ? 0.2 : 0.15), radius: 4)
         .onAppear { focused = true }
         .onReceive(
             NotificationCenter.default.publisher(for: .frosttySearchBarFocusRequested)
@@ -355,8 +361,9 @@ struct SearchBarOverlay: View {
             .padding(.leading, 8)
             .padding(.trailing, 50)
             .padding(.vertical, 6)
-            .background(Color.primary.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .background {
+                FrosttyHUDFieldInsetBackground(cornerRadius: 6)
+            }
             .overlay(alignment: .trailing) { counter.padding(.trailing, 8) }
             .onSubmit { onSubmit(NSEvent.modifierFlags.contains(.shift)) }
             .onKeyPress(.return, phases: [.down]) { press in
@@ -482,6 +489,14 @@ private struct SearchBarButtonStyle: ButtonStyle {
     }
 
     private func fillColor(isPressed: Bool) -> Color {
+        if FrosttyChromeAppearance.usesGlassBackground {
+            return Color(
+                nsColor: FrosttyChromeAppearance.hudButtonHighlightTint(
+                    isPressed: isPressed,
+                    isHovering: hovered
+                )
+            )
+        }
         if isPressed { return Color.primary.opacity(0.2) }
         if hovered { return Color.primary.opacity(0.1) }
         return Color.clear

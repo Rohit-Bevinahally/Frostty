@@ -425,6 +425,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
                 withTransaction(transaction) {
                     self?.windowSession.sidebarWidth = width
                 }
+                self?.updateTerminalGlassAppearance()
             }
         )
     }
@@ -1147,6 +1148,7 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     @objc func toggleSidebar() {
         windowSession.showSidebar.toggle()
         updateWindowDecorations()
+        updateTerminalGlassAppearance()
         // Restore keyboard focus to the terminal after sidebar toggle
         restoreFocus()
     }
@@ -1154,14 +1156,16 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
     private func updateWindowDecorations() {
         guard let window = self.window else { return }
         let showDecorations = windowSession.showSidebar
-        (window as? FrosttyWindow)?.disablesTitlebarDragging = !showDecorations
+        // Native titlebar dragging conflicts with tab reordering in the merged chrome row.
+        // Window dragging is provided by explicit WindowDragRegion views instead.
+        (window as? FrosttyWindow)?.disablesTitlebarDragging = true
 
-        // Keep .titled in the styleMask always — removing it breaks keyboard focus.
-        // Instead we hide the titlebar chrome and let SwiftUI extend content into that space.
+        // Traffic lights sit in the merged chrome row when the sidebar is visible.
+        // Keep .titled in the styleMask — removing it breaks keyboard focus.
         window.standardWindowButton(.closeButton)?.isHidden = !showDecorations
         window.standardWindowButton(.miniaturizeButton)?.isHidden = !showDecorations
         window.standardWindowButton(.zoomButton)?.isHidden = !showDecorations
-        window.titlebarSeparatorStyle = showDecorations ? .automatic : .none
+        window.titlebarSeparatorStyle = .none
 
         if let closeButton = window.standardWindowButton(.closeButton) {
             closeButton.superview?.alphaValue = showDecorations ? 1.0 : 0.0
@@ -1220,6 +1224,41 @@ class FrosttyWindowController: NSWindowController, NSWindowDelegate {
             isKeyWindow: key
         )
         windowGlassContainer?.updateKeyStatus(key)
+        updateTerminalGlassChromeExclusion()
+    }
+
+    @available(macOS 26.0, *)
+    private func updateTerminalGlassChromeExclusion() {
+        guard FrosttyConfig.shared.usesGlassBackground else {
+            windowGlassContainer?.updateChromeExclusion(topHeight: 0, leadingWidth: 0, showSidebar: false)
+            return
+        }
+        let exclusion = terminalGlassChromeExclusion()
+        windowGlassContainer?.updateChromeExclusion(
+            topHeight: exclusion.top,
+            leadingWidth: exclusion.leading,
+            showSidebar: windowSession.showSidebar
+        )
+        splitContainerView?.showsSidebar = windowSession.showSidebar
+    }
+
+    @available(macOS 26.0, *)
+    private func terminalGlassChromeExclusion() -> (top: CGFloat, leading: CGFloat) {
+        let showSidebar = windowSession.showSidebar
+        let leading = showSidebar ? windowSession.sidebarWidth : 0
+
+        let titlebarInset: CGFloat
+        if showSidebar, let themeFrame = window?.contentView?.superview {
+            titlebarInset = themeFrame.safeAreaInsets.top
+        } else {
+            titlebarInset = 0
+        }
+
+        let top = FrosttyTitlebarMetrics.combinedChromeHeight(
+            titlebarInset: titlebarInset,
+            showSidebar: showSidebar
+        )
+        return (top, leading)
     }
 
     @available(macOS 26.0, *)

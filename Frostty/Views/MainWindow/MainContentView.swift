@@ -34,13 +34,19 @@ struct MainContentView: View {
     @State private var paneTabDropGlobalX: CGFloat?
     @State private var paneTabDropInsertionSlot: Int?
     @State private var liveSidebarWidth: CGFloat?
+    @State private var chromeAppearanceTick: UInt = 0
 
     var body: some View {
+        let _ = chromeAppearanceTick
         GeometryReader { geo in
             let activeWorkspace = windowSession.activeWorkspace
             let activeTabs = activeWorkspace?.tabs ?? []
             let activeTabID = activeWorkspace?.activeTabID
-            let tabDropTopInset = windowSession.showSidebar ? geo.safeAreaInsets.top : 0
+            let titlebarInset = windowSession.showSidebar ? geo.safeAreaInsets.top : 0
+            let combinedChromeHeight = FrosttyTitlebarMetrics.combinedChromeHeight(
+                titlebarInset: titlebarInset,
+                showSidebar: windowSession.showSidebar
+            )
             let sidebarWidth = liveSidebarWidth ?? windowSession.sidebarWidth
 
             HStack(spacing: 0) {
@@ -49,6 +55,7 @@ struct MainContentView: View {
                         workspaces: windowSession.workspaces,
                         activeWorkspaceID: windowSession.activeWorkspaceID,
                         currentWidth: sidebarWidth,
+                        titlebarInset: titlebarInset,
                         onSelectWorkspace: onWorkspaceSelected,
                         onAddWorkspace: onNewWorkspace,
                         onDeleteWorkspace: onDeleteWorkspace,
@@ -75,6 +82,8 @@ struct MainContentView: View {
                         TabBarView(
                             tabs: activeTabs,
                             activeTabID: activeTabID,
+                            titlebarInset: titlebarInset,
+                            showSidebar: windowSession.showSidebar,
                             paneDropGlobalX: paneTabDropGlobalX,
                             paneDropInsertionSlot: paneTabDropInsertionSlot,
                             onSelectTab: onTabSelected,
@@ -106,9 +115,13 @@ struct MainContentView: View {
                                     }
                                 )
                             }
-                            .frame(height: 34 + tabDropTopInset)
-                            .offset(y: -tabDropTopInset)
+                            .frame(height: combinedChromeHeight)
                         }
+                    } else if windowSession.showSidebar, titlebarInset > 0 {
+                        Color.clear
+                            .frame(height: combinedChromeHeight)
+                            .frame(maxWidth: .infinity)
+                            .frosttyChromePanelBackground(style: FrosttyChromeAppearance.tabBarPanelStyle)
                     }
 
                     ZStack {
@@ -122,14 +135,6 @@ struct MainContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.top, windowSession.showSidebar ? geo.safeAreaInsets.top : 0)
-            .background(alignment: .top) {
-                if windowSession.showSidebar, geo.safeAreaInsets.top > 0 {
-                    TokyoNight.barBackgroundColor
-                        .frame(height: geo.safeAreaInsets.top)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                }
-            }
             .overlay(alignment: .bottom) {
                 if isPaneResizeMode {
                     ResizeModeToast()
@@ -143,6 +148,9 @@ struct MainContentView: View {
         .animation(.easeInOut(duration: 0.15), value: isPaneResizeMode)
         .animation(.easeInOut(duration: 0.18), value: markdownPreviewSession.isPresented)
         .font(GhosttyUIFonts.font(textStyle: .body))
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
+            chromeAppearanceTick &+= 1
+        }
     }
 
     private func clampedSidebarWidth(_ width: CGFloat) -> CGFloat {
@@ -156,22 +164,23 @@ struct MainContentView: View {
 }
 
 private struct ResizeModeToast: View {
+    @State private var chromeAppearanceTick: UInt = 0
+
     var body: some View {
+        let _ = chromeAppearanceTick
         Text("Resize Mode")
             .font(GhosttyUIFonts.font(size: 13, weight: .semibold))
             .foregroundStyle(.white)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(TokyoNight.barBackgroundColor.opacity(0.96))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(TokyoNight.activeBorderSwiftUIColor.opacity(0.6), lineWidth: 1)
-                )
+        .background {
+            FrosttyHUDChipBackground(cornerRadius: 12, showAccentStroke: true)
                 .shadow(color: .black.opacity(0.25), radius: 12, y: 6)
-        )
+        }
         .allowsHitTesting(false)
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
+            chromeAppearanceTick &+= 1
+        }
     }
 }
 

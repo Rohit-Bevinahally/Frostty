@@ -79,6 +79,13 @@ private enum TabBarChromeMetrics {
     static let barHeight: CGFloat = 32
 }
 
+private struct TabBarChromeFramePreferenceKey: PreferenceKey {
+    nonisolated(unsafe) static var defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
 // MARK: - TabBarView
 
 struct TabBarView: View {
@@ -86,6 +93,8 @@ struct TabBarView: View {
 
     let tabs: [Tab]
     let activeTabID: UUID?
+    let titlebarInset: CGFloat
+    let showSidebar: Bool
     let paneDropGlobalX: CGFloat?
     let paneDropInsertionSlot: Int?
 
@@ -101,8 +110,18 @@ struct TabBarView: View {
     @State private var tabFrameCache = TabFrameCache()
     @State private var insertionSlot: Int?
     @State private var editingTabID: UUID?
+    @State private var chromeAppearanceTick: UInt = 0
+    @State private var chromeGlobalFrame: CGRect = .zero
+
+    private var combinedChromeHeight: CGFloat {
+        FrosttyTitlebarMetrics.combinedChromeHeight(
+            titlebarInset: titlebarInset,
+            showSidebar: showSidebar
+        )
+    }
 
     var body: some View {
+        let _ = chromeAppearanceTick
         HStack(spacing: 0) {
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -135,9 +154,7 @@ struct TabBarView: View {
                                 )
                                 .id(tab.id)
                                 .background {
-                                    if shouldTrackTabFrames {
-                                        tabFrameReporter(tabID: tab.id)
-                                    }
+                                    tabFrameReporter(tabID: tab.id)
                                 }
                                 .offset(x: draggedTabID == tab.id ? dragOffset : 0)
                                 .zIndex(draggedTabID == tab.id ? 2 : 0)
@@ -175,16 +192,34 @@ struct TabBarView: View {
                     scrollToActiveTab(proxy: proxy, animated: true)
                 }
             }
+            .frame(height: TabBarChromeMetrics.barHeight)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: TabBarChromeMetrics.barHeight)
-        .background(TokyoNight.barBackgroundColor)
+        .frame(height: combinedChromeHeight, alignment: .bottom)
+        .background {
+            GeometryReader { geo in
+                Color.clear.preference(
+                    key: TabBarChromeFramePreferenceKey.self,
+                    value: geo.frame(in: .global)
+                )
+            }
+        }
+        .onPreferenceChange(TabBarChromeFramePreferenceKey.self) { frame in
+            chromeGlobalFrame = frame
+        }
+        .overlay {
+            tabBarWindowDragOverlay
+        }
+        .frosttyChromePanelBackground(style: FrosttyChromeAppearance.tabBarPanelStyle)
         .onAppear(perform: updatePaneDropInsertionSlot)
         .onChange(of: paneDropGlobalX) { _, _ in
             updatePaneDropInsertionSlot()
         }
         .onChange(of: tabs.map(\.id)) { _, _ in
             updatePaneDropInsertionSlot()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
+            chromeAppearanceTick &+= 1
         }
     }
 
@@ -196,6 +231,70 @@ struct TabBarView: View {
 
     private var shouldTrackTabFrames: Bool {
         editingTabID == nil
+    }
+
+    private var tabStripExclusionRect: CGRect? {
+        guard !tabs.isEmpty, chromeGlobalFrame.width > 0 else { return nil }
+
+        let tabFrames = tabs.compactMap { tabFrameCache.frames[$0.id] }
+        guard !tabFrames.isEmpty else { return nil }
+
+        var minX = tabFrames.map(\.minX).min()! - chromeGlobalFrame.minX
+        var maxX = tabFrames.map(\.maxX).max()! - chromeGlobalFrame.minX
+
+        if let draggedTabID,
+           let draggedFrame = tabFrameCache.frames[draggedTabID] {
+            let translatedMinX = draggedFrame.minX + dragOffset - chromeGlobalFrame.minX
+            let translatedMaxX = draggedFrame.maxX + dragOffset - chromeGlobalFrame.minX
+            minX = min(minX, translatedMinX)
+            maxX = max(maxX, translatedMaxX)
+        }
+
+        let tabRowY = combinedChromeHeight - TabBarChromeMetrics.barHeight
+
+        return CGRect(
+            x: minX,
+            y: tabRowY,
+            width: max(maxX - minX, 0),
+            height: TabBarChromeMetrics.barHeight
+        )
+    }
+
+    @ViewBuilder
+    private var tabBarWindowDragOverlay: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let height = geo.size.height
+            let tabRowY = height - TabBarChromeMetrics.barHeight
+            let tabRowHeight = TabBarChromeMetrics.barHeight
+
+            ZStack(alignment: .topLeading) {
+                if height > tabRowHeight {
+                    WindowDragRegionRepresentable()
+                        .frame(width: width, height: height - tabRowHeight)
+                }
+
+                if let exclusion = tabStripExclusionRect {
+                    if exclusion.minX > 0 {
+                        WindowDragRegionRepresentable()
+                            .frame(width: exclusion.minX, height: tabRowHeight)
+                            .offset(y: tabRowY)
+                    }
+
+                    let trailingWidth = width - exclusion.maxX
+                    if trailingWidth > 0 {
+                        WindowDragRegionRepresentable()
+                            .frame(width: trailingWidth, height: tabRowHeight)
+                            .offset(x: exclusion.maxX, y: tabRowY)
+                    }
+                } else if tabs.isEmpty {
+                    WindowDragRegionRepresentable()
+                        .frame(width: width, height: tabRowHeight)
+                        .offset(y: tabRowY)
+                }
+            }
+        }
+        .allowsHitTesting(true)
     }
 
     private func tabFrameReporter(tabID: UUID) -> some View {
@@ -305,8 +404,10 @@ struct TabItemView: View {
     @State private var isHovering = false
     @State private var isEditing = false
     @State private var editText = ""
+    @State private var chromeAppearanceTick: UInt = 0
 
     var body: some View {
+        let _ = chromeAppearanceTick
         HStack(spacing: 7) {
             indicatorView
 
@@ -337,10 +438,16 @@ struct TabItemView: View {
         .padding(.leading, 8)
         .padding(.trailing, 9)
         .frame(width: isEditing ? renameChipWidth(for: editText) : nil, height: TabBarChromeMetrics.chromeHeight, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: TabBarChromeMetrics.cornerRadius, style: .continuous)
-                .fill(tabFill)
-        )
+        .background {
+            FrosttyChromeCapsuleBackground(
+                cornerRadius: TabBarChromeMetrics.cornerRadius,
+                material: FrosttyChromeAppearance.tabCapsuleMaterial(
+                    isActive: isActive,
+                    isHovering: isHovering
+                ),
+                usesSolidFill: FrosttyChromeAppearance.tabCapsuleUsesSolidFill(isActive: isActive)
+            )
+        }
         .foregroundStyle(tabForeground)
         .fixedSize(horizontal: !isEditing, vertical: false)
         .padding(.trailing, 2)
@@ -367,20 +474,13 @@ struct TabItemView: View {
                 editText = newValue
             }
         }
-    }
-
-    private var tabFill: Color {
-        if isActive {
-            return TokyoNight.activeTabBackgroundColor
+        .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigChange)) { _ in
+            chromeAppearanceTick &+= 1
         }
-        if isHovering {
-            return TokyoNight.inactiveTabBackgroundColor.opacity(0.96)
-        }
-        return TokyoNight.inactiveTabBackgroundColor
     }
 
     private var tabForeground: Color {
-        TokyoNight.activeTabForegroundColor
+        isActive ? TokyoNight.activeTabForegroundColor : TokyoNight.inactiveTabForegroundColor
     }
 
     private var tabTextFont: Font {
@@ -392,7 +492,7 @@ struct TabItemView: View {
     }
 
     private var tabNSTextColor: NSColor {
-        TokyoNight.activeTabForeground
+        isActive ? TokyoNight.activeTabForeground : TokyoNight.inactiveTabForeground
     }
 
     private var tabPlaceholderForeground: Color {

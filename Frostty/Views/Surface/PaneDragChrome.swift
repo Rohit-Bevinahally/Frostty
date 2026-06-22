@@ -8,7 +8,6 @@ import SwiftUI
 
 enum PaneGrabHandleMetrics {
     static let handleHeight: CGFloat = 12
-    static let topInset: CGFloat = 2
 }
 
 @MainActor
@@ -105,7 +104,6 @@ struct TerminalPaneGrabHandleView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: PaneGrabHandleMetrics.handleHeight)
-        .padding(.top, PaneGrabHandleMetrics.topInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
@@ -153,7 +151,6 @@ struct BrowserPaneGrabHandleView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: PaneGrabHandleMetrics.handleHeight)
-        .padding(.top, PaneGrabHandleMetrics.topInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }

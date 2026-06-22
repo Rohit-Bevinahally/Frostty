@@ -82,8 +82,18 @@ final class BrowserPaneView: NSView {
 
     override var isOpaque: Bool { false }
 
+    private func clearPaneLayerCornerClipping() {
+        wantsLayer = true
+        clipsToBounds = false
+        layer?.cornerRadius = 0
+        layer?.maskedCorners = []
+        layer?.mask = nil
+        layer?.masksToBounds = false
+    }
+
     override func layout() {
         super.layout()
+        clearPaneLayerCornerClipping()
         updateGhosttyBackdrop()
         paneDropOverlayView.frame = bounds
         paneHandleHostingView.frame = bounds
